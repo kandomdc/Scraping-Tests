@@ -382,7 +382,7 @@ library(rvest)</code></pre>
   filter(!row_number() %in% c(1, 3)) %&gt;%
   row_to_names(row_number = 1) %&gt;%
   select(-c(`#`, Team)) %&gt;%
-  mutate(Season = factor(Season))
+  mutate(Season = as.double(Season))
 
 convertToDouble &lt;- sapply(cleanLeaderboardNL[ , -c(2)], as.double)
 
@@ -393,12 +393,12 @@ head(cleanLeaderboardNL)</code></pre>
 <pre><code>## # A tibble: 6 × 26
 ##   Season Name           G    PA     H  `2B`  `3B`    HR    BB    SO    SB `BB%+`
 ##    &lt;dbl&gt; &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;
-## 1    127 Barry Bon…   143   612   149    31     2    46   198    47     9    347
-## 2     50 Rogers Ho…   138   605   203    41    10    39    83    39     5    182
-## 3     49 Rogers Ho…   143   640   227    43    14    25    89    32     5    196
-## 4    129 Barry Bon…   147   617   135    27     3    45   232    41     6    416
-## 5    126 Barry Bon…   153   664   156    32     2    73   177    93    13    298
-## 6     19 Hugh Duffy   125   606   237    51    16    18    66    15    48    116
+## 1   2002 Barry Bon…   143   612   149    31     2    46   198    47     9    347
+## 2   1925 Rogers Ho…   138   605   203    41    10    39    83    39     5    182
+## 3   1924 Rogers Ho…   143   640   227    43    14    25    89    32     5    196
+## 4   2004 Barry Bon…   147   617   135    27     3    45   232    41     6    416
+## 5   2001 Barry Bon…   153   664   156    32     2    73   177    93    13    298
+## 6   1894 Hugh Duffy   125   606   237    51    16    18    66    15    48    116
 ## # … with 14 more variables: `K%+` &lt;dbl&gt;, `OBP+` &lt;dbl&gt;, `SLG+` &lt;dbl&gt;,
 ## #   `wRC+` &lt;dbl&gt;, Bat &lt;dbl&gt;, BsR &lt;dbl&gt;, Off &lt;dbl&gt;, Fld &lt;dbl&gt;, Pos &lt;dbl&gt;,
 ## #   Def &lt;dbl&gt;, Lg &lt;dbl&gt;, Rep &lt;dbl&gt;, RAR &lt;dbl&gt;, WAR &lt;dbl&gt;</code></pre>
@@ -418,6 +418,24 @@ head(cleanLeaderboardNL)</code></pre>
   filter(WAA &gt;= threshold) %&gt;%
   select(-c(threshold)) %&gt;%
   arrange(desc(Season))</code></pre>
+<pre class="r"><code>candidates %&gt;%
+  group_by(Name) %&gt;%
+  summarize(count = n()) %&gt;%
+  arrange(desc(count))</code></pre>
+<pre><code>## # A tibble: 149 × 2
+##    Name           count
+##    &lt;chr&gt;          &lt;int&gt;
+##  1 Barry Bonds       13
+##  2 Willie Mays       13
+##  3 Honus Wagner      12
+##  4 Rogers Hornsby    12
+##  5 Mike Schmidt       9
+##  6 Stan Musial        9
+##  7 Albert Pujols      7
+##  8 Mel Ott            6
+##  9 Arky Vaughan       5
+## 10 Dan Brouthers      5
+## # … with 139 more rows</code></pre>
 
 
 
