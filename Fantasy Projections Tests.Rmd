@@ -11,9 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load-packages, message=FALSE, warning=FALSE}
 library(dplyr)
-library(janitor)
 library(rvest)
-library(stringr)
 ```
 
 ```{r load-data, message=FALSE}
@@ -25,6 +23,9 @@ create_urls <- function(defensive){
     urls <<- c(urls, paste0('https://www.fangraphs.com/projections?pos=', pos, '&stats=bat&type=rfangraphsdc&statgroup=fantasy'))
   }
 }
+
+create_urls(positions)
+print(urls)
 
 hitter_projections <- read_html('https://www.fangraphs.com/projections?pos=of&stats=bat&type=rfangraphsdc&statgroup=fantasy')
 

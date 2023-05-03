@@ -371,9 +371,7 @@ pre code {
 
 
 <pre class="r"><code>library(dplyr)
-library(janitor)
-library(rvest)
-library(stringr)</code></pre>
+library(rvest)</code></pre>
 <pre class="r"><code>positions &lt;- c(&#39;c&#39;, &#39;1b&#39;, &#39;2b&#39;, &#39;3b&#39;, &#39;ss&#39;, &#39;of&#39;, &#39;dh&#39;)
 urls &lt;- character()
 
@@ -383,7 +381,16 @@ create_urls &lt;- function(defensive){
   }
 }
 
-hitter_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)
+create_urls(positions)
+print(urls)</code></pre>
+<pre><code>## [1] &quot;https://www.fangraphs.com/projections?pos=c&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot; 
+## [2] &quot;https://www.fangraphs.com/projections?pos=1b&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;
+## [3] &quot;https://www.fangraphs.com/projections?pos=2b&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;
+## [4] &quot;https://www.fangraphs.com/projections?pos=3b&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;
+## [5] &quot;https://www.fangraphs.com/projections?pos=ss&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;
+## [6] &quot;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;
+## [7] &quot;https://www.fangraphs.com/projections?pos=dh&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;</code></pre>
+<pre class="r"><code>hitter_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)
 
 sp_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=&amp;stats=sta&amp;type=rfangraphsdc&amp;statgroup=fantasy&amp;fantasypreset=classic&amp;sortcol=20&amp;sortdir=desc&#39;)
 
