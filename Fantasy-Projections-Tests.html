@@ -373,45 +373,68 @@ pre code {
 <pre class="r"><code>library(dplyr)
 library(janitor)
 library(rvest)</code></pre>
-<pre class="r"><code>projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=1b&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)</code></pre>
-<pre class="r"><code>player_projections &lt;- projections %&gt;% 
+<pre class="r"><code>hitter_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)
+
+rp_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=&amp;stats=rel&amp;type=rfangraphsdc&amp;statgroup=fantasy&amp;sortcol=8&amp;sortdir=desc&#39;)</code></pre>
+<pre class="r"><code>hitter_stats &lt;- hitter_projections %&gt;% 
   html_nodes(&#39;table&#39;) %&gt;%
   .[[7]] %&gt;%
   html_table()
 
-head(player_projections)</code></pre>
-<pre><code>## # A tibble: 6 × 28
-##     `#` Name   Team      G    PA    AB     H  `2B`  `3B`    HR     R   RBI    BB
-##   &lt;int&gt; &lt;chr&gt;  &lt;chr&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;
-## 1     1 Paul … STL     128   552   479   134    29     1    23    80    79    64
-## 2     2 Fredd… LAD     127   548   472   140    28     1    21    86    77    66
-## 3     3 Vladi… TOR     121   523   461   134    25     1    28    77    85    53
-## 4     4 Matt … ATL     128   552   474   122    27     1    30    80    87    67
-## 5     5 Pete … NYM     126   546   477   124    21     1    34    77    96    55
-## 6     6 Yandy… TBR     117   506   430   122    24     1    14    71    54    66
-## # … with 15 more variables: SO &lt;int&gt;, HBP &lt;int&gt;, SB &lt;int&gt;, CS &lt;int&gt;,
-## #   `BB%` &lt;chr&gt;, `K%` &lt;chr&gt;, ISO &lt;dbl&gt;, BABIP &lt;dbl&gt;, AVG &lt;dbl&gt;, OBP &lt;dbl&gt;,
-## #   SLG &lt;dbl&gt;, OPS &lt;dbl&gt;, wOBA &lt;dbl&gt;, `wRC+` &lt;int&gt;, ADP &lt;dbl&gt;</code></pre>
-<pre class="r"><code>player_projections %&gt;%
-  select(c(Name, H, `2B`, `3B`, HR, R, RBI, BB, SO, SB)) %&gt;%
+rp_stats &lt;- rp_projections %&gt;% 
+  html_nodes(&#39;table&#39;) %&gt;%
+  .[[7]] %&gt;%
+  html_table()
+head(rp_stats)</code></pre>
+<pre><code>## # A tibble: 6 × 27
+##     `#` Name   Team     GS     G    IP     W     L QS       SV   HLD     H    ER
+##   &lt;int&gt; &lt;chr&gt;  &lt;chr&gt; &lt;int&gt; &lt;int&gt; &lt;dbl&gt; &lt;int&gt; &lt;int&gt; &lt;lgl&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;
+## 1     1 Emman… CLE       0    57    57     4     2 NA       29     1    48    18
+## 2     2 Camil… SFG       0    53    53     4     3 NA       28     2    43    20
+## 3     3 Josh … SDP       0    54    54     4     2 NA       27     1    35    17
+## 4     4 Kenle… BOS       0    51    51     3     2 NA       27     2    42    21
+## 5     5 Jorda… TOR       0    54    54     4     3 NA       27     1    44    21
+## 6     6 David… PIT       0    54    54     4     3 NA       26     2    43    19
+## # … with 14 more variables: HR &lt;int&gt;, SO &lt;int&gt;, BB &lt;int&gt;, `K/9` &lt;dbl&gt;,
+## #   `BB/9` &lt;dbl&gt;, `K/BB` &lt;dbl&gt;, `HR/9` &lt;dbl&gt;, AVG &lt;dbl&gt;, WHIP &lt;dbl&gt;,
+## #   BABIP &lt;dbl&gt;, `LOB%` &lt;chr&gt;, ERA &lt;dbl&gt;, FIP &lt;dbl&gt;, ADP &lt;dbl&gt;</code></pre>
+<pre class="r"><code>hitter_stats %&gt;%
   mutate(
     TB = H + 2*`2B` + 3*`3B` + 4*HR,
     Points = R + RBI + BB - SO + SB + TB) %&gt;%
   select(Name, Points) %&gt;%
   arrange(desc(Points))</code></pre>
 <pre><code>## # A tibble: 30 × 2
-##    Name                  Points
-##    &lt;chr&gt;                  &lt;dbl&gt;
-##  1 Vladimir Guerrero Jr.    441
-##  2 Freddie Freeman          435
-##  3 Pete Alonso              424
-##  4 Paul Goldschmidt         402
-##  5 Matt Olson               402
-##  6 Vinnie Pasquantino       367
-##  7 Yandy Díaz               355
-##  8 Christian Walker         343
-##  9 Andrew Vaughn            334
-## 10 Nathaniel Lowe           328
+##    Name               Points
+##    &lt;chr&gt;               &lt;dbl&gt;
+##  1 Kyle Tucker           451
+##  2 Fernando Tatis Jr.    447
+##  3 Juan Soto             437
+##  4 Ronald Acuña Jr.      430
+##  5 Mookie Betts          419
+##  6 Mike Trout            416
+##  7 Yordan Alvarez        416
+##  8 Aaron Judge           374
+##  9 Bryan Reynolds        364
+## 10 Masataka Yoshida      364
+## # … with 20 more rows</code></pre>
+<pre class="r"><code>rp_stats %&gt;%
+  mutate(Points = 3*IP - H - 2*ER - BB + SO + 2*W - 2*L + 5*SV + 2*HLD) %&gt;%
+  select(Name, Points) %&gt;%
+  arrange(desc(Points))</code></pre>
+<pre><code>## # A tibble: 30 × 2
+##    Name           Points
+##    &lt;chr&gt;           &lt;dbl&gt;
+##  1 Josh Hader        294
+##  2 Emmanuel Clase    282
+##  3 Félix Bautista    271
+##  4 David Bednar      268
+##  5 Ryan Helsley      266
+##  6 Devin Williams    263
+##  7 Camilo Doval      261
+##  8 Jordan Romano     260
+##  9 Ryan Pressly      256
+## 10 Kenley Jansen     254
 ## # … with 20 more rows</code></pre>
 
 

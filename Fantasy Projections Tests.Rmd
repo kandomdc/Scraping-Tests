@@ -16,23 +16,34 @@ library(rvest)
 ```
 
 ```{r load-data, message=FALSE}
-projections <- read_html('https://www.fangraphs.com/projections?pos=1b&stats=bat&type=rfangraphsdc&statgroup=fantasy')
+hitter_projections <- read_html('https://www.fangraphs.com/projections?pos=of&stats=bat&type=rfangraphsdc&statgroup=fantasy')
+
+rp_projections <- read_html('https://www.fangraphs.com/projections?pos=&stats=rel&type=rfangraphsdc&statgroup=fantasy&sortcol=8&sortdir=desc')
 ```
 
 ```{r extract-table}
-player_projections <- projections %>% 
+hitter_stats <- hitter_projections %>% 
   html_nodes('table') %>%
   .[[7]] %>%
   html_table()
 
-head(player_projections)
+rp_stats <- rp_projections %>% 
+  html_nodes('table') %>%
+  .[[7]] %>%
+  html_table()
+head(rp_stats)
 ```
+
 ```{r projected-pts}
-player_projections %>%
-  select(c(Name, H, `2B`, `3B`, HR, R, RBI, BB, SO, SB)) %>%
+hitter_stats %>%
   mutate(
     TB = H + 2*`2B` + 3*`3B` + 4*HR,
     Points = R + RBI + BB - SO + SB + TB) %>%
+  select(Name, Points) %>%
+  arrange(desc(Points))
+
+rp_stats %>%
+  mutate(Points = 3*IP - H - 2*ER - BB + SO + 2*W - 2*L + 5*SV + 2*HLD) %>%
   select(Name, Points) %>%
   arrange(desc(Points))
 ```
