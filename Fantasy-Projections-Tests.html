@@ -390,7 +390,7 @@ print(urls)</code></pre>
 ## [5] &quot;https://www.fangraphs.com/projections?pos=ss&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;
 ## [6] &quot;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;
 ## [7] &quot;https://www.fangraphs.com/projections?pos=dh&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;</code></pre>
-<pre class="r"><code>hitter_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)
+<pre class="r"><code>hitter_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=ss&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)
 
 sp_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=&amp;stats=sta&amp;type=rfangraphsdc&amp;statgroup=fantasy&amp;fantasypreset=classic&amp;sortcol=20&amp;sortdir=desc&#39;)
 
@@ -424,16 +424,16 @@ hitter_stats %&gt;%
 <pre><code>## # A tibble: 30 × 3
 ##    Name               Team  Points
 ##    &lt;chr&gt;              &lt;chr&gt;  &lt;dbl&gt;
-##  1 Kyle Tucker        HOU      451
-##  2 Fernando Tatis Jr. SDP      447
-##  3 Juan Soto          SDP      437
-##  4 Ronald Acuña Jr.   ATL      430
-##  5 Mookie Betts       LAD      419
-##  6 Mike Trout         LAA      416
-##  7 Yordan Alvarez     HOU      416
-##  8 Aaron Judge        NYY      374
-##  9 Bryan Reynolds     PIT      364
-## 10 Masataka Yoshida   BOS      364
+##  1 Fernando Tatis Jr. SDP      438
+##  2 Wander Franco      TBR      392
+##  3 Marcus Semien      TEX      390
+##  4 Bo Bichette        TOR      385
+##  5 Trea Turner        PHI      372
+##  6 Francisco Lindor   NYM      362
+##  7 Bobby Witt Jr.     KCR      348
+##  8 Xander Bogaerts    SDP      339
+##  9 Carlos Correa      MIN      327
+## 10 Ketel Marte        ARI      326
 ## # … with 20 more rows</code></pre>
 <pre class="r"><code>sp_stats %&gt;% 
   mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %&gt;%
@@ -442,16 +442,16 @@ hitter_stats %&gt;%
 <pre><code>## # A tibble: 30 × 3
 ##    Name             Team  Points
 ##    &lt;chr&gt;            &lt;chr&gt;  &lt;dbl&gt;
-##  1 Gerrit Cole      NYY      424
-##  2 Shane McClanahan TBR      368
-##  3 Corbin Burnes    MIL      361
-##  4 Shane Bieber     CLE      358
-##  5 Luis Castillo    SEA      357
-##  6 Aaron Nola       PHI      356
-##  7 Shohei Ohtani    LAA      356
-##  8 Max Scherzer     NYM      355
-##  9 Justin Verlander NYM      349
-## 10 Sandy Alcantara  MIA      349
+##  1 Gerrit Cole      NYY      416
+##  2 Shane McClanahan TBR      364
+##  3 Corbin Burnes    MIL      360
+##  4 Shohei Ohtani    LAA      355
+##  5 Max Scherzer     NYM      355
+##  6 Shane Bieber     CLE      354
+##  7 Framber Valdez   HOU      353
+##  8 Aaron Nola       PHI      352
+##  9 Justin Verlander NYM      351
+## 10 Luis Castillo    SEA      350
 ## # … with 20 more rows</code></pre>
 <pre class="r"><code>rp_stats %&gt;% 
   mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %&gt;%
@@ -460,16 +460,16 @@ hitter_stats %&gt;%
 <pre><code>## # A tibble: 30 × 3
 ##    Name           Team  Points
 ##    &lt;chr&gt;          &lt;chr&gt;  &lt;dbl&gt;
-##  1 Josh Hader     SDP      294
-##  2 Emmanuel Clase CLE      282
-##  3 Félix Bautista BAL      271
-##  4 David Bednar   PIT      268
-##  5 Ryan Helsley   STL      266
-##  6 Devin Williams MIL      263
-##  7 Camilo Doval   SFG      261
-##  8 Jordan Romano  TOR      260
-##  9 Ryan Pressly   HOU      256
-## 10 Kenley Jansen  BOS      254
+##  1 Josh Hader     SDP      293
+##  2 Emmanuel Clase CLE      283
+##  3 Félix Bautista BAL      267
+##  4 David Bednar   PIT      265
+##  5 Ryan Helsley   STL      264
+##  6 Jordan Romano  TOR      262
+##  7 Devin Williams MIL      260
+##  8 Camilo Doval   SFG      259
+##  9 Ryan Pressly   HOU      258
+## 10 Kenley Jansen  BOS      257
 ## # … with 20 more rows</code></pre>
 
 

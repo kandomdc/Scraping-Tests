@@ -27,7 +27,7 @@ create_urls <- function(defensive){
 create_urls(positions)
 print(urls)
 
-hitter_projections <- read_html('https://www.fangraphs.com/projections?pos=of&stats=bat&type=rfangraphsdc&statgroup=fantasy')
+hitter_projections <- read_html('https://www.fangraphs.com/projections?pos=ss&stats=bat&type=rfangraphsdc&statgroup=fantasy')
 
 sp_projections <- read_html('https://www.fangraphs.com/projections?pos=&stats=sta&type=rfangraphsdc&statgroup=fantasy&fantasypreset=classic&sortcol=20&sortdir=desc')
 
