@@ -1,0 +1,38 @@
+---
+title: "Fantasy projections"
+author: "Kynan Desouza-Chen"
+date: "2023-05-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages, message=FALSE, warning=FALSE}
+library(dplyr)
+library(janitor)
+library(rvest)
+```
+
+```{r load-data, message=FALSE}
+projections <- read_html('https://www.fangraphs.com/projections?pos=1b&stats=bat&type=rfangraphsdc&statgroup=fantasy')
+```
+
+```{r extract-table}
+player_projections <- projections %>% 
+  html_nodes('table') %>%
+  .[[7]] %>%
+  html_table()
+
+head(player_projections)
+```
+```{r projected-pts}
+player_projections %>%
+  select(c(Name, H, `2B`, `3B`, HR, R, RBI, BB, SO, SB)) %>%
+  mutate(
+    TB = H + 2*`2B` + 3*`3B` + 4*HR,
+    Points = R + RBI + BB - SO + SB + TB) %>%
+  select(Name, Points) %>%
+  arrange(desc(Points))
+```
