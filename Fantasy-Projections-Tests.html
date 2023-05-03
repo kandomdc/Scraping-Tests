@@ -372,69 +372,97 @@ pre code {
 
 <pre class="r"><code>library(dplyr)
 library(janitor)
-library(rvest)</code></pre>
-<pre class="r"><code>hitter_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)
+library(rvest)
+library(stringr)</code></pre>
+<pre class="r"><code>positions &lt;- c(&#39;c&#39;, &#39;1b&#39;, &#39;2b&#39;, &#39;3b&#39;, &#39;ss&#39;, &#39;of&#39;, &#39;dh&#39;)
+urls &lt;- character()
+
+create_urls &lt;- function(defensive){
+  for(pos in defensive){
+    urls &lt;&lt;- c(urls, paste0(&#39;https://www.fangraphs.com/projections?pos=&#39;, pos, &#39;&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;))
+  }
+}
+
+hitter_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=of&amp;stats=bat&amp;type=rfangraphsdc&amp;statgroup=fantasy&#39;)
+
+sp_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=&amp;stats=sta&amp;type=rfangraphsdc&amp;statgroup=fantasy&amp;fantasypreset=classic&amp;sortcol=20&amp;sortdir=desc&#39;)
 
 rp_projections &lt;- read_html(&#39;https://www.fangraphs.com/projections?pos=&amp;stats=rel&amp;type=rfangraphsdc&amp;statgroup=fantasy&amp;sortcol=8&amp;sortdir=desc&#39;)</code></pre>
-<pre class="r"><code>hitter_stats &lt;- hitter_projections %&gt;% 
+<pre class="r"><code>extract_table = function(projections) {
+  projections %&gt;%
   html_nodes(&#39;table&#39;) %&gt;%
   .[[7]] %&gt;%
   html_table()
+}
 
-rp_stats &lt;- rp_projections %&gt;% 
-  html_nodes(&#39;table&#39;) %&gt;%
-  .[[7]] %&gt;%
-  html_table()
-head(rp_stats)</code></pre>
-<pre><code>## # A tibble: 6 × 27
-##     `#` Name   Team     GS     G    IP     W     L QS       SV   HLD     H    ER
-##   &lt;int&gt; &lt;chr&gt;  &lt;chr&gt; &lt;int&gt; &lt;int&gt; &lt;dbl&gt; &lt;int&gt; &lt;int&gt; &lt;lgl&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;
-## 1     1 Emman… CLE       0    57    57     4     2 NA       29     1    48    18
-## 2     2 Camil… SFG       0    53    53     4     3 NA       28     2    43    20
-## 3     3 Josh … SDP       0    54    54     4     2 NA       27     1    35    17
-## 4     4 Kenle… BOS       0    51    51     3     2 NA       27     2    42    21
-## 5     5 Jorda… TOR       0    54    54     4     3 NA       27     1    44    21
-## 6     6 David… PIT       0    54    54     4     3 NA       26     2    43    19
-## # … with 14 more variables: HR &lt;int&gt;, SO &lt;int&gt;, BB &lt;int&gt;, `K/9` &lt;dbl&gt;,
-## #   `BB/9` &lt;dbl&gt;, `K/BB` &lt;dbl&gt;, `HR/9` &lt;dbl&gt;, AVG &lt;dbl&gt;, WHIP &lt;dbl&gt;,
-## #   BABIP &lt;dbl&gt;, `LOB%` &lt;chr&gt;, ERA &lt;dbl&gt;, FIP &lt;dbl&gt;, ADP &lt;dbl&gt;</code></pre>
-<pre class="r"><code>hitter_stats %&gt;%
+hitter_stats &lt;- extract_table(hitter_projections)
+
+sp_stats &lt;- extract_table(sp_projections)
+
+rp_stats &lt;- extract_table(rp_projections)</code></pre>
+<pre class="r"><code>compute_batter_points &lt;- function(R, TB, RBI, BB, K, SB) {
+  R + TB + RBI + BB - K + SB
+}
+
+compute_pitcher_points &lt;- function(IP, H, ER, BB, K, W, L, SV, HD) {
+  3*IP - H - 2*ER - BB + K + 2*W - 2*L + 5*SV + 2*HD
+}
+
+hitter_stats %&gt;%
   mutate(
     TB = H + 2*`2B` + 3*`3B` + 4*HR,
-    Points = R + RBI + BB - SO + SB + TB) %&gt;%
-  select(Name, Points) %&gt;%
+    Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %&gt;%
+  select(Name, Team, Points) %&gt;%
   arrange(desc(Points))</code></pre>
-<pre><code>## # A tibble: 30 × 2
-##    Name               Points
-##    &lt;chr&gt;               &lt;dbl&gt;
-##  1 Kyle Tucker           451
-##  2 Fernando Tatis Jr.    447
-##  3 Juan Soto             437
-##  4 Ronald Acuña Jr.      430
-##  5 Mookie Betts          419
-##  6 Mike Trout            416
-##  7 Yordan Alvarez        416
-##  8 Aaron Judge           374
-##  9 Bryan Reynolds        364
-## 10 Masataka Yoshida      364
+<pre><code>## # A tibble: 30 × 3
+##    Name               Team  Points
+##    &lt;chr&gt;              &lt;chr&gt;  &lt;dbl&gt;
+##  1 Kyle Tucker        HOU      451
+##  2 Fernando Tatis Jr. SDP      447
+##  3 Juan Soto          SDP      437
+##  4 Ronald Acuña Jr.   ATL      430
+##  5 Mookie Betts       LAD      419
+##  6 Mike Trout         LAA      416
+##  7 Yordan Alvarez     HOU      416
+##  8 Aaron Judge        NYY      374
+##  9 Bryan Reynolds     PIT      364
+## 10 Masataka Yoshida   BOS      364
 ## # … with 20 more rows</code></pre>
-<pre class="r"><code>rp_stats %&gt;%
-  mutate(Points = 3*IP - H - 2*ER - BB + SO + 2*W - 2*L + 5*SV + 2*HLD) %&gt;%
-  select(Name, Points) %&gt;%
+<pre class="r"><code>sp_stats %&gt;% 
+  mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %&gt;%
+  select(Name, Team, Points) %&gt;%
   arrange(desc(Points))</code></pre>
-<pre><code>## # A tibble: 30 × 2
-##    Name           Points
-##    &lt;chr&gt;           &lt;dbl&gt;
-##  1 Josh Hader        294
-##  2 Emmanuel Clase    282
-##  3 Félix Bautista    271
-##  4 David Bednar      268
-##  5 Ryan Helsley      266
-##  6 Devin Williams    263
-##  7 Camilo Doval      261
-##  8 Jordan Romano     260
-##  9 Ryan Pressly      256
-## 10 Kenley Jansen     254
+<pre><code>## # A tibble: 30 × 3
+##    Name             Team  Points
+##    &lt;chr&gt;            &lt;chr&gt;  &lt;dbl&gt;
+##  1 Gerrit Cole      NYY      424
+##  2 Shane McClanahan TBR      368
+##  3 Corbin Burnes    MIL      361
+##  4 Shane Bieber     CLE      358
+##  5 Luis Castillo    SEA      357
+##  6 Aaron Nola       PHI      356
+##  7 Shohei Ohtani    LAA      356
+##  8 Max Scherzer     NYM      355
+##  9 Justin Verlander NYM      349
+## 10 Sandy Alcantara  MIA      349
+## # … with 20 more rows</code></pre>
+<pre class="r"><code>rp_stats %&gt;% 
+  mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %&gt;%
+  select(Name, Team, Points) %&gt;%
+  arrange(desc(Points))</code></pre>
+<pre><code>## # A tibble: 30 × 3
+##    Name           Team  Points
+##    &lt;chr&gt;          &lt;chr&gt;  &lt;dbl&gt;
+##  1 Josh Hader     SDP      294
+##  2 Emmanuel Clase CLE      282
+##  3 Félix Bautista BAL      271
+##  4 David Bednar   PIT      268
+##  5 Ryan Helsley   STL      266
+##  6 Devin Williams MIL      263
+##  7 Camilo Doval   SFG      261
+##  8 Jordan Romano  TOR      260
+##  9 Ryan Pressly   HOU      256
+## 10 Kenley Jansen  BOS      254
 ## # … with 20 more rows</code></pre>
 
 

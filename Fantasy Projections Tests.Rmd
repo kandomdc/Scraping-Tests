@@ -13,37 +13,64 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(janitor)
 library(rvest)
+library(stringr)
 ```
 
 ```{r load-data, message=FALSE}
+positions <- c('c', '1b', '2b', '3b', 'ss', 'of', 'dh')
+urls <- character()
+
+create_urls <- function(defensive){
+  for(pos in defensive){
+    urls <<- c(urls, paste0('https://www.fangraphs.com/projections?pos=', pos, '&stats=bat&type=rfangraphsdc&statgroup=fantasy'))
+  }
+}
+
 hitter_projections <- read_html('https://www.fangraphs.com/projections?pos=of&stats=bat&type=rfangraphsdc&statgroup=fantasy')
+
+sp_projections <- read_html('https://www.fangraphs.com/projections?pos=&stats=sta&type=rfangraphsdc&statgroup=fantasy&fantasypreset=classic&sortcol=20&sortdir=desc')
 
 rp_projections <- read_html('https://www.fangraphs.com/projections?pos=&stats=rel&type=rfangraphsdc&statgroup=fantasy&sortcol=8&sortdir=desc')
 ```
 
 ```{r extract-table}
-hitter_stats <- hitter_projections %>% 
+extract_table = function(projections) {
+  projections %>%
   html_nodes('table') %>%
   .[[7]] %>%
   html_table()
+}
 
-rp_stats <- rp_projections %>% 
-  html_nodes('table') %>%
-  .[[7]] %>%
-  html_table()
-head(rp_stats)
+hitter_stats <- extract_table(hitter_projections)
+
+sp_stats <- extract_table(sp_projections)
+
+rp_stats <- extract_table(rp_projections)
 ```
 
 ```{r projected-pts}
+compute_batter_points <- function(R, TB, RBI, BB, K, SB) {
+  R + TB + RBI + BB - K + SB
+}
+
+compute_pitcher_points <- function(IP, H, ER, BB, K, W, L, SV, HD) {
+  3*IP - H - 2*ER - BB + K + 2*W - 2*L + 5*SV + 2*HD
+}
+
 hitter_stats %>%
   mutate(
     TB = H + 2*`2B` + 3*`3B` + 4*HR,
-    Points = R + RBI + BB - SO + SB + TB) %>%
-  select(Name, Points) %>%
+    Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %>%
+  select(Name, Team, Points) %>%
   arrange(desc(Points))
 
-rp_stats %>%
-  mutate(Points = 3*IP - H - 2*ER - BB + SO + 2*W - 2*L + 5*SV + 2*HLD) %>%
-  select(Name, Points) %>%
+sp_stats %>% 
+  mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %>%
+  select(Name, Team, Points) %>%
+  arrange(desc(Points))
+  
+rp_stats %>% 
+  mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %>%
+  select(Name, Team, Points) %>%
   arrange(desc(Points))
 ```
