@@ -9,10 +9,17 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r load-packages, message=FALSE, warning=FALSE}
+```{r load-packages, message=FALSE}
 library(dplyr)
 library(rvest)
+library(RSelenium) # remotes::install_github("ropensci/RSelenium")
+library(tidyverse)
 ```
+
+```{r}
+rD <- rsDriver(browser = "chrome", port = free_port(), verbose = T, check = T)
+```
+
 
 ```{r load-data, message=FALSE}
 positions <- c('c', '1b', '2b', '3b', 'ss', 'of', 'dh')
