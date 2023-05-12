@@ -17,7 +17,7 @@ library(tidyverse)
 ```
 
 ```{r}
-rD <- rsDriver(browser = "chrome", port = free_port(), verbose = T, check = T)
+rD <- rsDriver(browser = "chrome", verbose = T, check = T)
 ```
 
 
