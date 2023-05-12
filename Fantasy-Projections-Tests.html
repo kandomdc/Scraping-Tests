@@ -300,8 +300,8 @@ pre code {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -309,16 +309,9 @@ pre code {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -371,7 +364,34 @@ pre code {
 
 
 <pre class="r"><code>library(dplyr)
-library(rvest)</code></pre>
+library(rvest)
+library(RSelenium)
+library(tidyverse)</code></pre>
+<pre class="r"><code>rD &lt;- rsDriver(browser=&quot;chrome&quot;, port=netstat::free_port(), verbose=T)</code></pre>
+<pre><code>## checking Selenium Server versions:</code></pre>
+<pre><code>## BEGIN: PREDOWNLOAD</code></pre>
+<pre><code>## BEGIN: DOWNLOAD</code></pre>
+<pre><code>## BEGIN: POSTDOWNLOAD</code></pre>
+<pre><code>## checking chromedriver versions:</code></pre>
+<pre><code>## BEGIN: PREDOWNLOAD</code></pre>
+<pre><code>## BEGIN: DOWNLOAD</code></pre>
+<pre><code>## BEGIN: POSTDOWNLOAD</code></pre>
+<pre><code>## checking geckodriver versions:</code></pre>
+<pre><code>## BEGIN: PREDOWNLOAD</code></pre>
+<pre><code>## BEGIN: DOWNLOAD</code></pre>
+<pre><code>## BEGIN: POSTDOWNLOAD</code></pre>
+<pre><code>## checking phantomjs versions:</code></pre>
+<pre><code>## BEGIN: PREDOWNLOAD</code></pre>
+<pre><code>## BEGIN: DOWNLOAD</code></pre>
+<pre><code>## BEGIN: POSTDOWNLOAD</code></pre>
+<pre><code>## Warning in rsDriver(browser = &quot;chrome&quot;, port = netstat::free_port(), verbose =
+## T): Could not determine server status.</code></pre>
+<pre><code>## [1] &quot;Connecting to remote server&quot;</code></pre>
+<pre><code>## Could not open chrome browser.</code></pre>
+<pre><code>## Client error message:
+## Undefined error in httr call. httr output: Failed to connect to localhost port 14415 after 2236 ms: Connection refused</code></pre>
+<pre><code>## Check server log for further details.</code></pre>
+<pre class="r"><code>remDr &lt;- rD[[&quot;client&quot;]]</code></pre>
 <pre class="r"><code>positions &lt;- c(&#39;c&#39;, &#39;1b&#39;, &#39;2b&#39;, &#39;3b&#39;, &#39;ss&#39;, &#39;of&#39;, &#39;dh&#39;)
 urls &lt;- character()
 
@@ -424,17 +444,17 @@ hitter_stats %&gt;%
 <pre><code>## # A tibble: 30 × 3
 ##    Name               Team  Points
 ##    &lt;chr&gt;              &lt;chr&gt;  &lt;dbl&gt;
-##  1 Fernando Tatis Jr. SDP      438
-##  2 Wander Franco      TBR      392
-##  3 Marcus Semien      TEX      390
-##  4 Bo Bichette        TOR      385
-##  5 Trea Turner        PHI      372
-##  6 Francisco Lindor   NYM      362
-##  7 Bobby Witt Jr.     KCR      348
-##  8 Xander Bogaerts    SDP      339
-##  9 Carlos Correa      MIN      327
-## 10 Ketel Marte        ARI      326
-## # … with 20 more rows</code></pre>
+##  1 Fernando Tatis Jr. SDP      412
+##  2 Wander Franco      TBR      373
+##  3 Bo Bichette        TOR      369
+##  4 Marcus Semien      TEX      367
+##  5 Trea Turner        PHI      355
+##  6 Francisco Lindor   NYM      342
+##  7 Bobby Witt Jr.     KCR      331
+##  8 Corey Seager       TEX      326
+##  9 Xander Bogaerts    SDP      321
+## 10 Carlos Correa      MIN      319
+## # ℹ 20 more rows</code></pre>
 <pre class="r"><code>sp_stats %&gt;% 
   mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %&gt;%
   select(Name, Team, Points) %&gt;%
@@ -442,35 +462,35 @@ hitter_stats %&gt;%
 <pre><code>## # A tibble: 30 × 3
 ##    Name             Team  Points
 ##    &lt;chr&gt;            &lt;chr&gt;  &lt;dbl&gt;
-##  1 Gerrit Cole      NYY      416
-##  2 Shane McClanahan TBR      364
-##  3 Corbin Burnes    MIL      360
-##  4 Shohei Ohtani    LAA      355
-##  5 Max Scherzer     NYM      355
-##  6 Shane Bieber     CLE      354
-##  7 Framber Valdez   HOU      353
-##  8 Aaron Nola       PHI      352
-##  9 Justin Verlander NYM      351
-## 10 Luis Castillo    SEA      350
-## # … with 20 more rows</code></pre>
+##  1 Gerrit Cole      NYY      386
+##  2 Spencer Strider  ATL      354
+##  3 Framber Valdez   HOU      344
+##  4 Shane McClanahan TBR      343
+##  5 Justin Verlander NYM      338
+##  6 Shane Bieber     CLE      336
+##  7 Corbin Burnes    MIL      333
+##  8 Luis Castillo    SEA      332
+##  9 Aaron Nola       PHI      331
+## 10 Shohei Ohtani    LAA      329
+## # ℹ 20 more rows</code></pre>
 <pre class="r"><code>rp_stats %&gt;% 
   mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %&gt;%
   select(Name, Team, Points) %&gt;%
   arrange(desc(Points))</code></pre>
 <pre><code>## # A tibble: 30 × 3
-##    Name           Team  Points
-##    &lt;chr&gt;          &lt;chr&gt;  &lt;dbl&gt;
-##  1 Josh Hader     SDP      293
-##  2 Emmanuel Clase CLE      283
-##  3 Félix Bautista BAL      267
-##  4 David Bednar   PIT      265
-##  5 Ryan Helsley   STL      264
-##  6 Jordan Romano  TOR      262
-##  7 Devin Williams MIL      260
-##  8 Camilo Doval   SFG      259
-##  9 Ryan Pressly   HOU      258
-## 10 Kenley Jansen  BOS      257
-## # … with 20 more rows</code></pre>
+##    Name            Team  Points
+##    &lt;chr&gt;           &lt;chr&gt;  &lt;dbl&gt;
+##  1 Josh Hader      SDP      272
+##  2 Emmanuel Clase  CLE      263
+##  3 Ryan Helsley    STL      250
+##  4 Camilo Doval    SFG      248
+##  5 David Bednar    PIT      248
+##  6 Félix Bautista  BAL      248
+##  7 Raisel Iglesias ATL      247
+##  8 Devin Williams  MIL      247
+##  9 Jordan Romano   TOR      246
+## 10 Kenley Jansen   BOS      238
+## # ℹ 20 more rows</code></pre>
 
 
 

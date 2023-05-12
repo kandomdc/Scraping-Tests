@@ -9,15 +9,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r load-packages, message=FALSE}
+```{r load-packages, message=FALSE, warning=FALSE}
 library(dplyr)
 library(rvest)
-library(RSelenium) # remotes::install_github("ropensci/RSelenium")
+library(RSelenium)
 library(tidyverse)
 ```
 
-```{r}
-rD <- rsDriver(browser = "chrome", verbose = T, check = T)
+```{r create-selenium-server-and-browser}
+rD <- rsDriver(browser="chrome", port=netstat::free_port(), verbose=T)
+remDr <- rD[["client"]]
 ```
 
 
