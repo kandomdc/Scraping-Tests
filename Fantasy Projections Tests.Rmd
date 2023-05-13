@@ -12,12 +12,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load-packages, message=FALSE, warning=FALSE}
 library(dplyr)
 library(rvest)
+library(stringr)
+library(tidyr)
 ```
 
 ```{r load-data}
 hitter_dat <- read_html("https://www.fangraphs.com/projections?pos=all&stats=bat&type=rfangraphsdc&statgroup=fantasy") %>% html_elements('#__NEXT_DATA__') %>% html_text() %>% jsonlite::fromJSON()
 
 hitter_data <- hitter_dat$props$pageProps$dehydratedState$queries$state$data[[1]]
+
+positions <- read_html('https://www.tgfantasybaseball.com/baseball/pos_elig.cfm')
 
 pitcher_dat <- read_html("https://www.fangraphs.com/projections?pos=&stats=pit&type=rfangraphsdc&statgroup=fantasy") %>% html_elements('#__NEXT_DATA__') %>% html_text() %>% jsonlite::fromJSON()
 
@@ -27,14 +31,31 @@ pitcher_data <- pitcher_dat$props$pageProps$dehydratedState$queries$state$data[[
 ```{r clean-data}
 clean_hitter_data <- hitter_data %>%
   select(
-    PlayerName, minpos, Team, H, `2B`, `3B`, HR, R, RBI, BB, SO, SB
-    )
+    PlayerName, Team, H, `2B`, `3B`, HR, R, RBI, BB, SO, SB
+    ) %>%
+  mutate(PlayerName = janitor::make_clean_names(PlayerName, case = 'none')) %>%
+  mutate(PlayerName = str_replace_all(str_remove(PlayerName, '_Jr'), '_', ' '))
 
 clean_pitcher_data <- pitcher_data %>%
   select(
     PlayerName, Team, IP, H, ER, BB, SO, W, L, SV, HLD
   )
+
+clean_positions <- positions %>% 
+  html_table(header = T) %>% 
+  .[[1]] %>%
+  pivot_longer(cols = -c('Player'), names_to = 'Pos', values_to = 'True') %>%
+  filter(True == 'X') %>%
+  separate(Player, sep = ', ', c('last_name', 'first_name')) %>%
+  mutate(Name = paste(first_name, last_name)) %>%
+  select(Name, Pos)
 ```
+
+```{r add-eligible-positions}
+clean_positions %>% left_join(clean_hitter_data, by = c('Name' = 'PlayerName')) %>%
+  filter(is.na(Team))
+```
+
 
 ```{r projected-pts}
 compute_batter_points <- function(R, TB, RBI, BB, K, SB) {
@@ -50,7 +71,7 @@ clean_hitter_data %>%
     `1B` = H - `2B` -`3B` - HR,
     TB = `1B` + 2*`2B` + 3*`3B` + 4*HR,
     Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %>%
-  select(PlayerName, minpos, Team, Points) %>%
+  select(PlayerName, Team, Points) %>%
   arrange(desc(Points))
 
 clean_pitcher_data %>%
