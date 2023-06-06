@@ -44,16 +44,18 @@ clean_pitcher_data <- pitcher_data %>%
 clean_positions <- positions %>% 
   html_table(header = T) %>% 
   .[[1]] %>%
-  pivot_longer(cols = -c('Player'), names_to = 'Pos', values_to = 'True') %>%
-  filter(True == 'X') %>%
+  filter(Player != 'Player') %>%
   separate(Player, sep = ', ', c('last_name', 'first_name')) %>%
-  mutate(Name = paste(first_name, last_name)) %>%
-  select(Name, Pos)
+  mutate(
+    Name = janitor::make_clean_names(paste(first_name, last_name), case = 'none'),
+    Name = str_replace_all(str_remove(Name, '_Jr'), '_', ' '))
+  # pivot_longer(cols = -c('Player'), names_to = 'Pos', values_to = 'True') %>%
+  # filter(True == 'X') %>%
+  # select(Name, Pos)
 ```
 
 ```{r add-eligible-positions}
-clean_positions %>% left_join(clean_hitter_data, by = c('Name' = 'PlayerName')) %>%
-  filter(is.na(Team))
+clean_hitter_data %>% left_join(clean_positions, by = c('PlayerName'='Name'))
 ```
 
 
