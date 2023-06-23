@@ -36,7 +36,7 @@ pitcher_data <- pitcher_dat$props$pageProps$dehydratedState$queries$state$data[[
 ```{r clean-data}
 clean_hitter_data <- hitter_data %>%
   select(
-    PlayerName, Team, H, `1B`, `2B`, `3B`, HR, R, RBI, BB, SO, SB, minpos
+    PlayerName, Team, H, `1B`, `2B`, `3B`, HR, R, RBI, BB, SO, SB
     ) %>%
   mutate(PlayerName = janitor::make_clean_names(PlayerName, case = 'none'))
 
@@ -45,9 +45,7 @@ clean_pitcher_data <- pitcher_data %>%
     PlayerName, Team, IP, H, ER, BB, SO, W, L, SV, HLD
   )
 
-  
-positions_1 %>% 
-  html_table(header = T) %>%
+clean_positions_1 <- positions_1 %>% 
   .[[1]] %>%
   select(Player, Team, `Elig. Pos.`) %>%
   mutate(
@@ -59,8 +57,7 @@ positions_1 %>%
     Team = str_replace_all(Team, 'SF', 'SFG'),
     Team = str_replace_all(Team, 'WSH', 'WSN'))
 
-postions_2 %>%
-  html_table(header = T) %>%
+clean_positions_2 <- positions_2 %>%
   .[[1]] %>%
   select(Player, Team, `Elig. Pos.`) %>%
   mutate(
@@ -72,12 +69,14 @@ postions_2 %>%
     Team = str_replace_all(Team, 'SF', 'SFG'),
     Team = str_replace_all(Team, 'WSH', 'WSN'))
 
+final_positions <- clean_positions_1 %>%
+  full_join(clean_positions_2) %>%
+  filter(!(str_detect(`Elig. Pos.`, 'P') & Player != 'Shohei_Ohtani'))
 ```
 
 ```{r add-eligible-positions}
-clean_hitter_data %>% 
-  left_join(clean_positions, by = c('PlayerName'='Player', 'Team'='Team')) %>%
-  filter(is.na(`Elig. Pos.`))
+final_hitter_data <- clean_hitter_data %>% 
+  right_join(final_positions, by = c('PlayerName'='Player', 'Team'='Team'))
 ```
 
 
@@ -90,11 +89,12 @@ compute_pitcher_points <- function(IP, H, ER, BB, K, W, L, SV, HD) {
   3*IP - H - 2*ER - BB + K + 2*W - 2*L + 5*SV + 2*HD
 }
 
-clean_hitter_data %>% 
+final_hitter_data %>% 
   mutate(
     TB = `1B` + 2*`2B` + 3*`3B` + 4*HR,
     Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %>%
-  select(PlayerName, Team, Points) %>%
+  filter(str_detect(`Elig. Pos.`, '3')) %>%
+  select(PlayerName, Team, `Elig. Pos.`,Points) %>%
   arrange(desc(Points))
 
 clean_pitcher_data %>%

@@ -371,1205 +371,57 @@ library(tidyr)</code></pre>
 
 hitter_data &lt;- hitter_dat$props$pageProps$dehydratedState$queries$state$data[[1]]
 
-positions &lt;- read_html(&#39;https://www.tgfantasybaseball.com/baseball/pos_elig.cfm&#39;)
+positions_1 &lt;- 
+  read_html(&#39;https://www.espn.com/fantasy/baseball/story/_/id/35438162/fantasy-baseball-rankings-head-head-rotisserie-leagues-2023-espn-karabell&#39;) %&gt;%
+  html_table()
+
+positions_2 &lt;- read_html(&#39;https://www.espn.com/fantasy/baseball/story/_/id/35437997/fantasy-baseball-rankings-points-leagues-2023-espn-cockcroft&#39;) %&gt;%
+  html_table()
 
 pitcher_dat &lt;- read_html(&quot;https://www.fangraphs.com/projections?pos=&amp;stats=pit&amp;type=rfangraphsdc&amp;statgroup=fantasy&quot;) %&gt;% html_elements(&#39;#__NEXT_DATA__&#39;) %&gt;% html_text() %&gt;% jsonlite::fromJSON()
 
 pitcher_data &lt;- pitcher_dat$props$pageProps$dehydratedState$queries$state$data[[1]]</code></pre>
 <pre class="r"><code>clean_hitter_data &lt;- hitter_data %&gt;%
   select(
-    PlayerName, Team, H, `2B`, `3B`, HR, R, RBI, BB, SO, SB
+    PlayerName, Team, H, `1B`, `2B`, `3B`, HR, R, RBI, BB, SO, SB
     ) %&gt;%
-  mutate(PlayerName = janitor::make_clean_names(PlayerName, case = &#39;none&#39;)) %&gt;%
-  mutate(PlayerName = str_replace_all(str_remove(PlayerName, &#39;_Jr&#39;), &#39;_&#39;, &#39; &#39;))
+  mutate(PlayerName = janitor::make_clean_names(PlayerName, case = &#39;none&#39;))
 
 clean_pitcher_data &lt;- pitcher_data %&gt;%
   select(
     PlayerName, Team, IP, H, ER, BB, SO, W, L, SV, HLD
   )
 
-clean_positions &lt;- positions %&gt;% 
-  html_table(header = T) %&gt;% 
+clean_positions_1 &lt;- positions_1 %&gt;% 
   .[[1]] %&gt;%
-  filter(Player != &#39;Player&#39;) %&gt;%
-  separate(Player, sep = &#39;, &#39;, c(&#39;last_name&#39;, &#39;first_name&#39;)) %&gt;%
+  select(Player, Team, `Elig. Pos.`) %&gt;%
   mutate(
-    Name = janitor::make_clean_names(paste(first_name, last_name), case = &#39;none&#39;),
-    Name = str_replace_all(str_remove(Name, &#39;_Jr&#39;), &#39;_&#39;, &#39; &#39;))
-  # pivot_longer(cols = -c(&#39;Player&#39;), names_to = &#39;Pos&#39;, values_to = &#39;True&#39;) %&gt;%
-  # filter(True == &#39;X&#39;) %&gt;%
-  # select(Name, Pos)</code></pre>
-<pre class="r"><code>clean_hitter_data %&gt;% left_join(clean_positions, by = c(&#39;PlayerName&#39;=&#39;Name&#39;))</code></pre>
-<pre><code>##                       PlayerName Team   H 2B.x 3B.x HR  R RBI BB  SO SB
-## 1                    Aaron Judge  NYY  89   15    0 27 65  66 56 100  6
-## 2                      Juan Soto  SDP  89   17    1 19 65  56 89  69  7
-## 3                   Ronald Acuna  ATL 104   21    1 20 73  54 49  83 28
-## 4                     Mike Trout  LAA  92   18    1 25 65  59 52 110  2
-## 5                 Fernando Tatis  SDP 100   19    1 27 69  66 39  93 17
-## 6                   Mookie Betts  LAD  96   22    2 20 70  55 46  66  8
-## 7                 Yordan Alvarez  HOU  90   19    1 23 58  68 45  76  1
-## 8                  Wander Franco  TBR  99   23    4 10 54  46 31  44 15
-## 9                   Jose Ramirez  CLE  98   24    3 17 58  63 45  50 13
-## 10                  Alex Bregman  HOU  95   21    1 15 59  59 57  50  1
-## 11                 Marcus Semien  TEX 102   21    2 16 65  51 39  72 12
-## 12               Adley Rutschman  BAL  81   20    1 11 50  40 51  58  2
-## 13               Freddie Freeman  LAD 111   24    1 16 68  61 50  65  8
-## 14               Julio Rodriguez  SEA  98   18    2 18 58  57 31 104 19
-## 15                  Corey Seager  TEX  95   21    1 16 55  53 36  60  1
-## 16                   Kyle Tucker  HOU 103   23    1 19 57  69 41  65 15
-## 17                   Bo Bichette  TOR 111   22    1 17 58  58 25  79  9
-## 18                  Matt Chapman  TOR  86   21    1 18 54  56 46 115  2
-## 19                 Nolan Arenado  STL 102   21    1 18 50  64 33  60  3
-## 20                    Will Smith  LAD  74   14    1 15 45  50 38  54  1
-## 21              Francisco Lindor  NYM  92   18    2 16 56  56 36  83  9
-## 22                 Rafael Devers  BOS 107   26    1 21 62  69 34  84  2
-## 23                 Brandon Nimmo  NYM  89   16    4  8 53  36 44  71  4
-## 24              Paul Goldschmidt  STL 101   22    0 18 61  58 50  91  6
-## 25                   Trea Turner  PHI 108   22    3 13 58  49 29  81 16
-## 26                Dansby Swanson  CHC  98   20    2 14 55  50 38 102  8
-## 27                   Sean Murphy  ATL  72   17    1 14 42  49 32  73  0
-## 28               Xander Bogaerts  SDP  90   18    0 11 51  44 39  73  5
-## 29                 Carlos Correa  MIN  83   18    1 13 44  46 39  74  0
-## 30                  Austin Riley  ATL 104   21    1 22 59  66 36 106  1
-## 31             Vladimir Guerrero  TOR 101   20    0 21 57  64 38  62  4
-## 32                   Jose Altuve  HOU  90   19    0 14 58  41 37  57  7
-## 33                   Pete Alonso  NYM  93   15    1 26 59  73 43  83  2
-## 34                  J T Realmuto  PHI  78   17    2 11 41  42 24  75 11
-## 35                   Luis Arraez  MIA 110   20    2  4 48  36 34  28  3
-## 36                    Matt Olson  ATL  93   20    1 24 63  66 54 103  1
-## 37                   Luis Robert  CHW  93   20    1 16 52  53 21  89  8
-## 38                 Manny Machado  SDP  93   18    1 17 53  57 37  76  5
-## 39                Andres Gimenez  CLE  94   18    2 10 46  46 23  75 14
-## 40              Masataka Yoshida  BOS  97   19    1 12 48  51 37  38  2
-## 41               George Springer  TOR  85   14    2 16 55  47 36  67  9
-## 42                    Yandy Diaz  TBR  90   18    0 11 52  41 47  50  2
-## 43                    Jonah Heim  TEX  60   13    1  9 30  34 21  48  2
-## 44                Harrison Bader  NYY  73   12    3 11 41  41 22  66 13
-## 45                Anthony Rendon  LAA  79   18    1 10 44  47 43  54  3
-## 46                  Willy Adames  MIL  83   17    0 17 50  52 37 102  5
-## 47                Corbin Carroll  ARI  81   17    4 12 48  48 37  92 15
-## 48                  Nico Hoerner  CHC 101   18    2  7 49  42 26  46 16
-## 49               Randy Arozarena  TBR  92   19    2 14 52  54 36  98 16
-## 50                Bryan Reynolds  PIT 101   21    4 15 57  51 40  88  6
-## 51                 Shohei Ohtani  LAA  90   16    4 22 58  57 45  97 11
-## 52                  Bryce Harper  PHI  84   20    1 16 53  52 51  79  9
-## 53                  Ozzie Albies  ATL  96   21    2 16 51  54 25  65  7
-## 54                   Jeff McNeil  NYM  98   20    1  6 43  40 28  42  3
-## 55             Michael Harris II  ATL  90   20    2 12 51  49 24  88 15
-## 56                     Max Muncy  LAD  68   12    1 19 52  53 54  91  2
-## 57                Alejandro Kirk  TOR  67   12    0  8 32  35 33  33  0
-## 58                Cedric Mullins  BAL  82   16    3 11 47  40 31  67 18
-## 59                Gleyber Torres  NYY  89   16    1 14 50  46 34  70  9
-## 60                    Bobby Witt  KCR  93   19    4 15 55  50 22  84 21
-## 61                  Byron Buxton  MIN  75   18    2 19 53  49 31  99  7
-## 62                Daulton Varsho  TOR  77   15    1 17 47  51 28  78  9
-## 63                   Steven Kwan  CLE  98   18    3  5 54  33 41  43 12
-## 64                   Tommy Edman  STL  86   18    2  8 48  37 24  57 16
-## 65              Gunnar Henderson  BAL  73   14    3 12 47  42 44  96  6
-## 66                  J P Crawford  SEA  85   18    1  5 45  34 42  62  3
-## 67                   Jeremy Pena  HOU  88   16    1 14 49  47 21  88  9
-## 68                  Alex Verdugo  BOS  97   23    2  8 50  40 29  53  3
-## 69                     Ty France  SEA  95   20    1 12 50  47 26  64  1
-## 70                 Jorge Polanco  MIN  84   18    1 13 47  44 34  73  4
-## 71                   Cal Raleigh  SEA  62   15    1 14 36  43 26  82  1
-## 72                  Brandon Lowe  TBR  64   13    1 14 41  43 32  82  3
-## 73              Christian Walker  ARI  94   20    1 19 55  59 41  89  2
-## 74                   Ketel Marte  ARI  89   21    3 11 48  40 31  61  5
-## 75                 KeBryan Hayes  PIT  88   20    3  7 45  37 31  78 12
-## 76                  Seiya Suzuki  CHC  83   17    2 15 46  44 41  86  6
-## 77                 Miguel Vargas  LAD  82   18    2 10 48  46 36  67  5
-## 78                     Josh Jung  TEX  79   15    1 14 43  49 21  93  2
-## 79                 Lars Nootbaar  STL  62   12    1 11 42  35 41  64  5
-## 80                  Tim Anderson  CHW 104   18    1  8 51  34 17  72 12
-## 81                      Ian Happ  CHC  89   20    1 13 47  47 49 101  6
-## 82                 Isaac Paredes  TBR  59   13    1 12 35  39 31  50  0
-## 83                Nathaniel Lowe  TEX  98   19    1 14 52  52 42  91  2
-## 84                  Yoan Moncada  CHW  79   17    1 10 42  41 34  93  2
-## 85              Christian Yelich  MIL  83   15    1 12 56  42 52  93 14
-## 86                    Brett Baty  NYM  73   13    0 12 42  43 30  87  1
-## 87                     Jose Siri  TBR  70   14    2 13 43  43 22 113 13
-## 88                 Anthony Volpe  NYY  70   15    2 11 44  41 32  87 15
-## 89                 Adolis Garcia  TEX  94   18    2 19 57  64 26 119 11
-## 90              Mike Yastrzemski  SFG  71   18    2 12 45  39 32  84  3
-## 91            Vinnie Pasquantino  KCR  89   21    1 14 46  49 40  50  1
-## 92                   Austin Hays  BAL  90   20    2 13 47  47 22  79  3
-## 93                   DJ LeMahieu  NYY  83   14    1  8 44  37 34  59  3
-## 94                  Ha Seong Kim  SDP  63   13    1  7 32  31 27  57  8
-## 95                   Matt McLain  CIN  70   15    2 10 42  39 36  98  8
-## 96                 Trent Grisham  SDP  65   15    1 11 42  38 42  91  7
-## 97                   Royce Lewis  MIN  69   17    1 10 38  39 21  67  8
-## 98                 Anthony Rizzo  NYY  76   13    1 15 46  48 34  67  3
-## 99               Yasmani Grandal  CHW  47    8    0  8 25  26 33  51  0
-## 100               Hunter Renfroe  LAA  79   16    0 19 46  50 27  81  1
-## 101            Willson Contreras  STL  61   14    1 11 37  38 29  70  4
-## 102                  Javier Baez  DET  88   18    2 12 45  47 18  99  7
-## 103            William Contreras  MIL  67   12    1 13 37  39 30  76  1
-## 104             Jake Cronenworth  SDP  78   17    3  9 46  42 39  70  3
-## 105                Andrew Vaughn  CHW  92   20    1 16 45  53 32  69  0
-## 106            Andrew Benintendi  CHW  88   18    2  7 47  38 35  58  8
-## 107               Cody Bellinger  CHC  68   14    2 12 43  40 31  74 10
-## 108            Giancarlo Stanton  NYY  72   12    0 20 41  54 34  90  0
-## 109               Eugenio Suarez  SEA  73   13    1 16 43  50 43 120  1
-## 110                 Ryan McMahon  COL  79   17    2 13 44  46 36  96  5
-## 111               Salvador Perez  KCR  90   17    1 19 43  57 15  85  0
-## 112                 Riley Greene  DET  65   11    3  7 35  29 26  75  4
-## 113                Orlando Arcia  ATL  79   15    0 11 41  41 28  66  2
-## 114               Thairo Estrada  SFG  69   13    1  8 37  31 17  52 11
-## 115                 Eloy Jimenez  CHW  91   16    1 18 46  58 28  87  0
-## 116            Anthony Santander  BAL  90   20    1 18 49  57 31  84  1
-## 117                Leody Taveras  TEX  86   17    3  8 45  40 28  92 13
-## 118            Jeimer Candelario  WSN  82   20    2 12 42  43 32  81  1
-## 119                 Jose Trevino  NYY  46    9    1  5 21  23 10  36  1
-## 120                 Amed Rosario  CLE  98   16    5  7 47  38 19  73 10
-## 121              Kevin Kiermaier  TOR  59   12    3  6 32  29 18  63  7
-## 122                   Luis Urias  MIL  65   13    1 10 37  36 32  67  2
-## 123                    J D Davis  SFG  74   15    1 11 39  40 35  95  1
-## 124               Starling Marte  NYM  86   15    2  9 47  40 22  68 20
-## 125                 Esteury Ruiz  OAK  79   18    1  6 46  36 24  73 29
-## 126                 James Outman  LAD  60   12    3 11 38  40 27 100  6
-## 127             Michael Conforto  SFG  74   14    0 13 43  44 39  81  2
-## 128              Lourdes Gurriel  ARI 100   23    2 11 45  49 24  68  2
-## 129               Ramon Laureano  OAK  69   16    1 11 39  35 23  88  9
-## 130               Kyle Schwarber  PHI  73   13    1 23 55  56 55 113  3
-## 131                  Paul DeJong  STL  56   11    0 12 34  36 26  80  4
-## 132                   Max Kepler  MIN  63   14    1 11 40  36 32  56  3
-## 133                 Nolan Gorman  STL  72   13    0 18 44  50 30 101  3
-## 134                Jazz Chisholm  MIA  55    9    2 11 35  31 20  71 15
-## 135                  Jorge Mateo  BAL  74   16    3  9 42  38 18  89 24
-## 136            Francisco Alvarez  NYM  37    7    0  8 24  25 19  52  1
-## 137                 Mitch Garver  TEX  60   12    0 14 38  38 32  85  1
-## 138                  Taylor Ward  LAA  70   14    1 11 42  36 32  69  3
-## 139                    Josh Lowe  TBR  59   14    1  9 33  34 25  82 11
-## 140               Jonathan India  CIN  87   18    1 10 52  41 36  81  9
-## 141                 Taylor Walls  TBR  59   13    2  8 40  31 39  82 13
-## 142               Gabriel Moreno  ARI  59   11    0  4 25  26 16  43  3
-## 143             Ryan Mountcastle  BAL  91   17    1 17 47  56 26  96  3
-## 144            Teoscar Hernandez  SEA  89   15    1 18 47  54 24 113  6
-## 145                 Danny Jansen  TOR  50   11    0 11 31  37 22  48  1
-## 146                    Zach Neto  LAA  75   17    1  8 38  40 18  71  6
-## 147                 Omar Narvaez  NYM  43    7    0  4 21  20 20  40  0
-## 148                   Josh Rojas  ARI  70   17    1  5 39  32 34  70 11
-## 149                 Chris Taylor  LAD  60   14    2 10 37  37 29  95  7
-## 150                  Adam Duvall  BOS  65   14    2 16 39  47 21  87  1
-## 151                 Rowdy Tellez  MIL  79   13    1 20 43  54 37  78  1
-## 152                  Ramon Urias  BAL  57   12    1  7 28  31 21  62  2
-## 153                 Keibert Ruiz  WSN  70   14    0  9 31  34 22  30  2
-## 154            Christian Vazquez  MIN  53   10    0  4 24  23 16  44  2
-## 155                  Josh Naylor  CLE  84   19    0 14 41  53 29  57  4
-## 156              Brendan Donovan  STL  67   12    1  5 38  28 34  48  3
-## 157               Jarred Kelenic  SEA  76   17    2 15 44  47 31 100  9
-## 158               Josh Donaldson  NYY  51   11    0 10 31  31 29  67  1
-## 159               Ezequiel Tovar  COL  85   19    2  9 42  42 19  78  7
-## 160            Enrique Hernandez  BOS  66   17    1  8 37  35 27  62  1
-## 161             Brandon Crawford  SFG  61   12    1  8 32  32 27  68  3
-## 162             Santiago Espinal  TOR  69   14    0  5 31  29 21  42  5
-## 163                 Bryson Stott  PHI  76   14    1  7 38  33 26  65  8
-## 164        Christian Bethancourt  TBR  42    9    0  7 22  24  9  47  2
-## 165                 Ryan Jeffers  MIN  32    6    1  6 18  19 15  45  0
-## 166                   Joey Gallo  MIN  42    7    1 13 34  32 40  95  2
-## 167               Travis dArnaud  ATL  70   15    1 10 34  39 18  64  0
-## 168                Justin Turner  BOS  85   19    0 10 44  45 34  59  2
-## 169                  Jake Rogers  DET  34    7    1  8 22  24 19  69  2
-## 170                  Jorge Soler  MIA  74   16    0 19 46  49 38  97  1
-## 171                  Joey Wendle  MIA  68   17    2  4 31  27 15  52  7
-## 172               Patrick Wisdom  CHC  61   12    1 18 41  44 32 117  5
-## 173                 Joc Pederson  SFG  65   12    2 13 39  42 30  71  2
-## 174                Jack Suwinski  PIT  57   11    0 12 34  34 31  87  4
-## 175                Mitch Haniger  SFG  80   15    1 14 47  49 30  88  1
-## 176                   Mark Canha  NYM  63   12    1  8 38  33 33  60  3
-## 177                  Jake Meyers  HOU  50   10    1  6 26  29 18  61  3
-## 178                  Myles Straw  CLE  77   14    1  1 40  25 34  60 16
-## 179                  Mike Zunino  CLE  36    8    0 10 23  26 17  76  0
-## 180                Dylan Carlson  STL  52   12    2  6 29  27 21  48  2
-## 181               Chas McCormick  HOU  58   10    1  9 34  35 30  74  5
-## 182                Brandon Drury  LAA  71   16    1 12 38  42 20  75  1
-## 183                  Joey Wiemer  MIL  65   15    1 11 39  38 28  96 11
-## 184                  Jean Segura  MIA  81   13    2  5 36  30 24  53  9
-## 185                  Nick Fortes  MIA  41    6    0  5 21  21 14  35  3
-## 186                   Connor Joe  PIT  56   13    2  6 33  26 32  63  3
-## 187                Triston Casas  BOS  69   15    2 12 43  43 48  83  1
-## 188                 Brent Rooker  OAK  71   16    0 16 44  48 39 113  2
-## 189                Manuel Margot  TBR  63   12    1  5 31  29 22  47  9
-## 190                   Jose Abreu  HOU  98   21    0 11 47  52 34  85  0
-## 191              Kyle Higashioka  NYY  33    7    0  7 18  22 10  42  0
-## 192                  Nicky Lopez  KCR  64   11    3  1 30  22 23  40  8
-## 193                 Adam Frazier  BAL  69   13    2  4 34  26 22  35  6
-## 194                 Miguel Rojas  LAD  66   14    1  4 29  30 16  36  6
-## 195                 J D Martinez  LAD  83   19    1 16 47  54 29  93  0
-## 196                Brandon Marsh  PHI  75   14    4  8 39  39 32 111  8
-## 197                  Drew Waters  KCR  70   15    3  8 39  34 27  99  8
-## 198                  Kolten Wong  SEA  54   11    1  5 29  24 20  47  7
-## 199                    Josh Bell  CLE  83   17    1 12 42  48 48  76  1
-## 200             Bryan De La Cruz  MIA  85   16    1 11 41  42 24  86  4
-## 201                  Kris Bryant  COL  73   17    1 10 40  35 30  58  2
-## 202                    Tony Kemp  OAK  58   12    1  4 29  23 27  37  6
-## 203                 LaMonte Wade  SFG  61   11    1 10 39  31 39  60  3
-## 204                    Yan Gomes  CHC  52    8    1  8 24  27 11  42  1
-## 205            Christopher Morel  CHC  68   13    2 14 42  41 26 100  7
-## 206              Geraldo Perdomo  ARI  58   10    2  5 34  29 31  60  6
-## 207                 Tyler ONeill  STL  44    8    0  9 26  27 16  59  5
-## 208                Spencer Steer  CIN  71   16    1 12 41  43 29  71  3
-## 209                  Jake Fraley  CIN  68   13    1 12 40  43 37  71 11
-## 210                   Seth Brown  OAK  65   15    1 14 37  40 26  89  5
-## 211                  Connor Wong  BOS  49   12    1  7 25  28 13  60  3
-## 212             Michael A Taylor  MIN  53   10    1  7 27  26 18  73  6
-## 213                    CJ Abrams  WSN  84   17    2  8 42  38 14  69 12
-## 214                    Jon Berti  MIA  52    9    1  3 29  19 24  55 16
-## 215              Elly De La Cruz  CIN  55   11    2 10 30  31 18  77  9
-## 216                  Luis Garcia  WSN  89   17    2 10 42  40 19  63  4
-## 217                Austin Slater  SFG  39    8    1  5 23  20 20  47  7
-## 218                  Akil Baddoo  DET  52   10    2  5 28  24 27  58  9
-## 219                    TJ Friedl  CIN  61   10    3  7 33  31 23  52  7
-## 220               Austin Meadows  DET  47   10    2  7 25  26 19  38  2
-## 221                  MJ Melendez  KCR  75   17    2 14 45  46 40  95  3
-## 222                Maikel Garcia  KCR  57   13    1  3 28  24 20  52  8
-## 223                 Josh H Smith  TEX  41    8    1  4 24  20 21  44  4
-## 224               Alex Kirilloff  MIN  58   11    1  8 30  32 22  55  1
-## 225                Jake McCarthy  ARI  57   11    3  5 31  28 20  56 14
-## 226                   Nick Allen  OAK  65   13    1  4 30  25 22  58  5
-## 227              Shea Langeliers  OAK  55   11    1 10 29  32 21  76  1
-## 228                Reese McGuire  BOS  42   10    0  2 18  16 10  39  1
-## 229               Ezequiel Duran  TEX  67   15    1  9 34  37 15  72  6
-## 230              Whit Merrifield  TOR  78   16    1  6 39  34 20  53 14
-## 231                    Ryan Noda  OAK  48   11    1  9 33  30 38  89  4
-## 232                 Brandon Belt  TOR  52   11    0 10 31  32 34  77  1
-## 233                Jesus Sanchez  MIA  50    9    1  9 26  29 19  57  2
-## 234                 Luis Rengifo  LAA  51    9    1  6 25  24 15  40  4
-## 235                Jace Peterson  OAK  54   10    1  5 29  25 30  68  8
-## 236                  Gio Urshela  LAA  53   10    1  5 23  24 12  38  1
-## 237                 Trevor Story  BOS  45   11    1  7 26  26 19  57  8
-## 238               Endy Rodriguez  PIT  35    8    1  4 18  17 13  31  1
-## 239             Nick Castellanos  PHI  95   23    1 13 49  51 25  89  4
-## 240               Randal Grichuk  COL  79   17    1 11 38  42 18  68  2
-## 241                  Lane Thomas  WSN  80   17    2 12 45  38 31  89  6
-## 242                  Yainer Diaz  HOU  37    7    1  5 18  20  7  29  0
-## 243               Brian Anderson  MIL  62   12    1 10 34  36 31  85  2
-## 244                  Ji Hwan Bae  PIT  63   12    2  4 35  26 22  57 15
-## 245                   Nick Maton  DET  57   13    2  7 31  29 34  80  2
-## 246                Wilmer Flores  SFG  56   12    0  8 30  30 22  42  0
-## 247               Zach McKinstry  DET  41    8    2  4 24  18 18  39  5
-## 248                Casey Schmitt  SFG  78   16    1  7 34  39 18  78  2
-## 249                   Tom Murphy  SEA  33    7    0  5 17  18 17  52  1
-## 250               Michael Massey  KCR  60   13    0  7 29  29 15  65  4
-## 251            Spencer Torkelson  DET  77   17    1 13 42  45 39  87  2
-## 252               Mauricio Dubon  HOU  52    9    1  4 26  22 12  32  3
-## 253                    Alec Bohm  PHI  81   15    1  8 37  40 22  61  2
-## 254                 Joey Meneses  WSN  95   18    1 13 41  48 24  84  1
-## 255                   Oneil Cruz  PIT  33    6    1  6 21  18 14  43  5
-## 256                 Carson Kelly  ARI  30    6    0  4 17  16 15  32  1
-## 257              Edward Olivares  KCR  65   12    2  8 35  31 18  52  6
-## 258             Andrew McCutchen  PIT  70   14    0 11 41  36 40  69  6
-## 259              Jacob Stallings  MIA  42    9    0  3 18  19 18  48  0
-## 260                Jason Heyward  LAD  47   10    1  6 26  24 23  45  3
-## 261               Jose Caballero  SEA  32    7    0  3 22  16 21  39  8
-## 262             Tucupita Marcano  PIT  58   11    2  4 30  23 23  48  5
-## 263                  Nick Pratto  KCR  64   14    2 11 40  37 36 103  3
-## 264             Tyler Stephenson  CIN  69   14    1  7 35  35 28  76  1
-## 265              Jonathan Schoop  DET  65   13    1  8 30  29 15  60  2
-## 266              Victor Caratini  MIL  32    5    0  4 16  17 16  37  0
-## 267                Victor Robles  WSN  62   13    2  5 32  26 19  67 12
-## 268               Rodolfo Castro  PIT  54   10    1  9 28  29 21  67  3
-## 269                 Will Brennan  CLE  63   13    1  4 28  30 17  39  6
-## 270                  Matt Mervis  CHC  74   16    1 13 40  46 27  78  1
-## 271                 Gary Sanchez  SDP  31    6    0  8 19  21 16  50  1
-## 272                  Kyle Farmer  MIN  47    9    0  4 21  23 11  41  1
-## 273             Michael Brantley  HOU  47    9    1  4 24  20 17  23  1
-## 274                   Luke Raley  TBR  39    7    0  8 24  25 14  58  4
-## 275                 Elvis Andrus  CHW  58   11    0  5 28  28 17  44  8
-## 276                    Bo Naylor  CLE  23    5    1  4 15  15 15  36  2
-## 277                  Jake Burger  CHW  50    9    1 10 27  32 14  64  1
-## 278                 Edmundo Sosa  PHI  58   10    2  6 29  27  9  58  5
-## 279                David Peralta  LAD  54   12    1  6 25  31 18  50  1
-## 280                  Jared Walsh  LAA  59   13    1 11 31  35 23  78  1
-## 281                    Alex Call  WSN  55   12    1  7 33  30 30  57  5
-## 282                Evan Longoria  ARI  48   10    0 10 26  29 18  62  1
-## 283                 James McCann  BAL  34    6    0  4 16  16 10  40  2
-## 284              Trayce Thompson  LAD  27    5    1  7 19  23 16  54  1
-## 285             Daniel Vogelbach  NYM  39    7    0  8 25  26 36  54  0
-## 286               Harold Ramirez  TBR  59   12    1  6 26  29 11  41  2
-## 287              Kerry Carpenter  DET  54   12    1 10 28  33 16  59  2
-## 288                Marcell Ozuna  ATL  57   10    0 12 32  36 23  60  1
-## 289                 Jesse Winker  MIL  51   10    0  7 30  28 33  48  0
-## 290               Luis Guillorme  NYM  30    5    0  1 13  11 15  21  0
-## 291               Carlos Santana  PIT  62   13    0  9 36  34 45  54  2
-## 292               Garrett Cooper  MIA  77   16    1 10 36  40 29  93  0
-## 293                   Eric Haase  DET  50    9    1  9 26  29 19  70  2
-## 294             Christian Arroyo  BOS  39    9    0  4 19  20  9  33  2
-## 295                Austin Hedges  PIT  30    5    0  4 16  15 12  41  1
-## 296                  Blake Sabol  SFG  40    8    1  5 20  22 15  58  2
-## 297              Francisco Mejia  TBR  44   12    1  4 22  21  9  41  0
-## 298                   Manny Pina  OAK  14    3    0  2  7   8  6  14  1
-## 299                   Kyle Isbel  KCR  46   10    2  4 24  23 14  50  7
-## 300                Gabriel Arias  CLE  49    9    1  7 25  26 19  60  2
-## 301               Patrick Bailey  SFG  24    5    0  3 13  13 10  32  1
-## 302                  Matt Thaiss  LAA  31    6    1  4 18  17 18  39  1
-## 303            Adalberto Mondesi  BOS  36    8    1  5 19  19  9  49 12
-## 304                  Jonah Bride  OAK  26    6    0  2 13  13 13  26  1
-## 305                 Jarren Duran  BOS  38    9    2  4 20  20 12  46  6
-## 306                  Sal Frelick  MIL  25    5    1  2 12  11  8  16  2
-## 307                 Jose Miranda  MIN  27    5    0  3 12  14  7  19  0
-## 308                  Owen Miller  MIL  46   10    0  4 22  21 13  42  3
-## 309                Austin Barnes  LAD  21    4    0  3 13  12 12  26  2
-## 310                   Nick Ahmed  ARI  36    9    1  3 18  17 12  37  3
-## 311                  Austin Nola  SDP  33    7    0  2 16  16 15  28  1
-## 312                  Alek Thomas  ARI  28    6    1  3 14  14  8  24  2
-## 313             Jurickson Profar  COL  80   19    2  9 45  38 37  55  4
-## 314                   Max Stassi  LAA  22    4    0  3 12  12 11  34  0
-## 315                  Seby Zavala  CHW  25    5    0  4 15  15 12  56  0
-## 316                     C J Cron  COL  65   14    1 13 35  43 22  68  0
-## 317              Jordan Westburg  BAL  17    4    0  3  9   9  7  20  1
-## 318              Robbie Grossman  TEX  48   10    1  6 29  27 29  63  3
-## 319                 Aledmys Diaz  OAK  47   10    0  5 21  23 13  38  1
-## 320              Eduardo Escobar  NYM  38    7    1  6 20  22 13  39  1
-## 321                  Dylan Moore  SEA  29    6    1  4 18  16 18  48 10
-## 322                Colton Cowser  BAL  23    5    0  3 13  12 14  32  1
-## 323                   Luke Maile  CIN  23    6    0  3 12  11 10  33  1
-## 324                 Brice Turang  MIL  53    9    1  5 28  24 23  58  8
-## 325                  Nick Senzel  CIN  72   14    1  6 36  31 27  64  7
-## 326                Rob Refsnyder  BOS  19    4    0  2 10  10  9  21  1
-## 327                Josh Palacios  PIT  22    4    1  2 11  10  8  18  2
-## 328                Mike Tauchman  CHC  19    4    0  2 11   9 12  26  1
-## 329                  Andy Ibanez  DET  26    6    0  2 13  11  8  19  1
-## 330                  Ji Man Choi  PIT  39   10    0  6 21  22 26  54  0
-## 331                    JJ Bleday  OAK  58   14    1 10 34  33 38  84  2
-## 332                 Gavin Sheets  CHW  46    8    0  8 23  27 17  43  0
-## 333                   Tommy Pham  NYM  50    9    1  7 29  26 28  63  6
-## 334               Avisail Garcia  MIA  53    9    0  8 25  28 15  66  3
-## 335                 Rougned Odor  SDP  34    8    1  6 21  22 14  44  2
-## 336                 Willi Castro  MIN  31    6    1  3 16  16  7  34  5
-## 337                Dominic Smith  WSN  75   16    1  7 35  34 27  64  1
-## 338              Oswaldo Cabrera  NYY  31    7    1  5 17  17 11  36  4
-## 339               Donovan Solano  MIN  29    7    0  1 11  11  8  23  0
-## 340                  Nolan Jones  COL  46   10    1  6 25  27 22  60  2
-## 341                Alec Burleson  STL  28    5    1  4 13  14  7  18  1
-## 342               Andrew Knizner  STL  31    6    0  4 17  15 12  33  1
-## 343                 Carlos Perez  OAK  17    4    0  3  8  10  6  19  0
-## 344              Tucker Barnhart  CHC  27    5    0  2 11  11 12  36  0
-## 345             Stuart Fairchild  CIN  37    9    1  5 21  22 16  54  4
-## 346                 Brett Wisely  SFG  28    6    1  3 15  14 11  33  4
-## 347           Isiah Kiner Falefa  NYY  60   10    1  3 27  24 15  36  9
-## 348                Brenton Doyle  COL  42    7    1  6 22  23  9  60  6
-## 349                  Jordan Diaz  OAK  23    5    0  3  9  10  4  17  0
-## 350             Travis Jankowski  TEX  28    5    1  1 17  10 16  29  6
-## 351                 Yuli Gurriel  MIA  38    9    1  3 16  16 10  19  2
-## 352                   Zack Short  DET  15    3    0  2 10   8 11  25  1
-## 353              Enmanuel Valdez  BOS  24    6    0  4 13  14  8  27  1
-## 354                 Mark Vientos  NYM  26    4    0  5 15  17 10  38  0
-## 355                 Cavan Biggio  TOR  19    4    0  3 12  10 13  27  2
-## 356                   Elias Diaz  COL  62   13    1  7 28  33 18  48  0
-## 357                Freddy Fermin  KCR  13    2    0  2  7   7  5  13  0
-## 358                 Kevin Newman  CIN  44    8    1  2 18  17 10  22  3
-## 359               Oscar Gonzalez  CLE  45    8    1  6 19  23  7  38  0
-## 360                   Kyle Lewis  ARI  38    7    0  7 22  21 18  52  1
-## 361                    Joey Bart  SFG  29    5    0  4 15  15  9  45  1
-## 362                 Austin Wynns  COL  26    4    0  2 13  13 10  25  1
-## 363               Matt Carpenter  SDP  45   11    1  9 28  31 32  72  1
-## 364                Josh Harrison  PHI  39    8    1  3 17  17  9  30  2
-## 365               Willie Calhoun  NYY  27    5    0  4 14  15 11  17  0
-## 366                Tyler Freeman  CLE  14    3    0  1  7   6  3   8  1
-## 367                Jordan Walker  STL  73   15    1  8 39  39 23  82  6
-## 368                Oswald Peraza  NYY  11    2    0  1  6   6  3  11  2
-## 369               Jonathan Davis  MIA  20    4    1  2 13   9 11  26  4
-## 370               Tyler Heineman  TOR   9    2    0  1  4   4  3   8  0
-## 371              Ildemaro Vargas  WSN  31    6    1  2 14  13  7  16  1
-## 372                 Trey Mancini  CHC  66   13    1  9 34  35 27  74  0
-## 373                Tyrone Taylor  MIL  39    8    1  7 21  23 11  46  3
-## 374                  Curt Casali  CIN  21    4    0  3 12  11 13  34  0
-## 375                  Jason Delay  PIT  21    4    1  1  9   9  6  28  0
-## 376                 Samad Taylor  KCR  14    3    0  1  7   7  6  16  3
-## 377                Romy Gonzalez  CHW  37    7    1  6 21  22 11  60  5
-## 378                    Wil Myers  CIN  56   12    0  9 28  31 23  77  3
-## 379                 Mark Mathias  PIT  13    3    0  1  7   7  7  16  2
-## 380                  Pavin Smith  ARI  48   10    1  6 26  24 22  45  1
-## 381                Nick Madrigal  CHC  16    2    1  0  7   5  4   6  1
-## 382                 Chad Wallach  LAA  22    4    0  3 12  12 11  38  0
-## 383               Trevor Larnach  MIN  39    8    1  6 21  23 21  64  1
-## 384               Carter Kieboom  WSN  17    3    0  2  9   9 10  21  1
-## 385               Edouard Julien  MIN  14    3    0  2  9   8 10  24  1
-## 386              Corey Dickerson  WSN  65   15    1  7 28  31 16  50  1
-## 387                   Matt Duffy  KCR  29    5    0  1 11  10  9  24  1
-## 388                 David Villar  SFG   9    2    0  2  6   6  5  15  0
-## 389               Vaughn Grissom  ATL  15    3    0  1  8   7  4  11  1
-## 390                  Nick Gordon  MIN  22    5    1  2 11  11  5  21  2
-## 391                     Jake Alu  WSN  15    4    0  2  7   8  5  14  1
-## 392 Christian Encarnacion Strand  CIN  12    2    0  2  6   7  3  14  0
-## 393                   AJ Pollock  SEA  49   10    0  7 25  26 15  47  2
-## 394                   Joey Ortiz  BAL  10    2    0  1  5   5  3   9  0
-## 395                  Donny Sands  DET   7    1    0  1  3   3  3   7  0
-## 396               Luis Campusano  SDP  11    2    0  2  6   6  4  11  0
-## 397                   Greg Allen  NYY  10    2    0  1  6   6  4  14  3
-## 398                  Aaron Hicks  BAL  15    2    0  2  9   8 10  19  1
-## 399              Emmanuel Rivera  ARI  24    5    1  3 12  12  6  21  0
-## 400                  Pablo Reyes  BOS  15    4    0  1  8   7  5  13  1
-## 401                 Jorge Alfaro &lt;NA&gt;  45    9    1  5 20  21  9  58  2
-## 402                 Matt Wallner  MIN  17    4    0  3 10  11  9  32  1
-## 403                 Abraham Toro  MIL  13    3    0  2  7   7  5  11  1
-## 404                  Jake Bauers  NYY  28    5    0  5 16  16 18  46  3
-## 405                 Terrin Vavra  BAL  13    3    0  1  7   6  7  13  1
-## 406             Dominic Fletcher  ARI  18    3    1  1  9   9  5  19  1
-## 407                 Sam Haggerty  SEA  18    4    0  1 11   9  8  23  5
-## 408                 Miguel Amaya  CHC  23    5    0  3 12  14 12  32  1
-## 409                Ryan Kreidler  DET  10    2    0  1  6   6  5  16  1
-## 410                 Sam Hilliard  ATL  24    5    1  5 16  15 12  45  3
-## 411                Matt Vierling  DET  63   11    2  6 29  26 19  57  7
-## 412               Garrett Stubbs  PHI  16    3    0  2 10   8  8  20  1
-## 413             Charlie Blackmon  COL  88   17    3  9 46  42 26  61  2
-## 414                George Valera  CLE  10    2    0  2  6   5  6  13  0
-## 415               Brett Sullivan  SDP  10    2    0  1  5   5  3   8  1
-## 416                 Vidal Brujan  TBR  10    2    0  1  6   5  4  10  2
-## 417                 Jonny DeLuca  LAD   9    2    0  2  5   5  3   8  1
-## 418                   Juan Yepez  STL  11    2    0  2  6   7  3  11  0
-## 419                 Brian Serven  COL   6    1    0  1  3   3  2   7  0
-## 420                  Kevin Smith  OAK  12    3    0  2  6   7  4  21  1
-## 421              Taylor Trammell  SEA  15    3    0  3  9   9  8  23  2
-## 422                   Alan Trejo  COL  44   11    1  5 21  23  8  44  2
-## 423                  Jacob Amaya  MIA   9    2    0  1  4   4  4  10  0
-## 424                 Ben Rortvedt  NYY   5    1    0  1  3   3  2   8  0
-## 425             Garrett Mitchell  MIL   8    1    0  1  4   4  3  12  1
-## 426              Jonathan Aranda  TBR   6    1    0  1  3   3  3   6  0
-## 427             Elehuris Montero  COL  23    5    1  4 12  14  7  26  0
-## 428                 Logan OHoppe  LAA   4    1    0  1  2   3  2   4  0
-## 429             Martin Maldonado  HOU  45    8    0  7 26  25 22  80  0
-## 430            Miles Mastrobuoni  CHC   9    2    0  1  5   4  4   9  1
-## 431               Carlos Perez 2  CHW   6    1    0  1  3   3  2   3  0
-## 432                Cesar Salazar  HOU   6    1    0  1  3   4  2   7  0
-## 433                    Luke Voit &lt;NA&gt;  26    5    0  5 14  15 13  40  1
-## 434                    Jake Cave  PHI  16    3    1  2  8   9  6  21  1
-## 435                Cooper Hummel  SEA   6    1    0  1  4   3  4  10  1
-## 436                Oscar Mercado  STL   9    2    0  1  5   4  3   7  1
-## 437               Michael Chavis  WSN  14    2    0  3  7   8  4  20  0
-## 438            Andruw Monasterio  MIL   9    2    0  1  5   4  4  11  1
-## 439                  Darick Hall  PHI  14    4    0  3  8  10  6  19  0
-## 440                 Jose Herrera  ARI  10    2    0  1  5   4  5  12  0
-## 441                 Kyle Garlick  MIN   8    2    0  2  5   5  3  13  0
-## 442               Mike Moustakas  COL  42   10    0  6 22  23 17  43  1
-## 443                   Lenyn Sosa  CHW   9    2    0  1  4   4  2   8  0
-## 444                Ernie Clement  TOR   7    1    0  0  3   3  2   4  0
-## 445                 Kevin Pillar  ATL  11    2    0  2  6   6  2  10  1
-## 446                Mickey Moniak  LAA  41    7    3  7 23  21 10  58  3
-## 447                 Conner Capel  OAK   8    2    0  1  4   4  3   9  1
-## 448                   Rene Pinto  TBR   4    1    0  1  2   2  1   6  0
-## 449                  Henry Ramos  CIN  23    4    1  3 11  11  9  23  2
-## 450                 Nathan Lukes  TOR  14    3    0  1  7   7  5  12  1
-## 451               Xavier Edwards  MIA   7    1    0  0  3   2  3   5  1
-## 452                  Eric Hosmer &lt;NA&gt;  42    8    0  4 18  20 13  33  1
-## 453                Cam Gallagher  CLE  14    3    0  1  6   7  5  19  0
-## 454                   Drew Ellis  PHI   8    2    0  2  5   5  5  13  0
-## 455                  Nelson Cruz  SDP  29    4    0  5 15  18 11  34  1
-## 456                  Josh Lester  BAL   8    2    0  2  4   5  2   9  0
-## 457               David Fletcher  LAA   5    1    0  0  2   2  1   2  0
-## 458                     Yu Chang  BOS   8    2    0  1  5   5  3  11  0
-## 459                Brandon Dixon  SDP  13    2    0  2  7   8  4  19  1
-## 460                  Oscar Colas  CHW  44    7    1  6 22  24 11  50  2
-## 461                   Otto Lopez  TOR   4    1    0  0  2   2  1   3  0
-## 462                   Zack Gelof  OAK   6    1    0  1  3   3  3   9  1
-## 463                 Cal Mitchell  PIT  14    3    0  2  7   7  5  15  1
-## 464               Addison Barger  TOR   4    1    0  1  2   2  1   5  0
-## 465                Harold Castro  COL  65   11    1  3 24  29 10  43  1
-## 466                 Kyle Stowers  BAL  18    4    0  3 10  11  8  27  1
-## 467                  Curtis Mead  TBR   3    1    0  0  1   1  1   3  0
-## 468          Justyn Henry Malloy  DET   5    1    0  1  2   2  3   6  0
-## 469                Michael Perez  NYM   4    1    0  1  2   3  2   7  0
-## 470                 Darren Baker  WSN   7    1    0  0  3   3  2   6  1
-## 471                  Tyler Nevin  DET  17    3    0  2  9   8  8  19  0
-## 472            Ronaldo Hernandez  BOS   3    1    0  0  1   1  1   3  0
-## 473                 Kody Clemens  PHI  34    6    1  6 20  23 12  45  1
-## 474                 Ryan McKenna  BAL  11    2    0  1  7   6  5  18  1
-## 475                  Corey Julks  HOU  25    5    0  4 14  15  8  30  3
-## 476                Jon Singleton  MIL  12    2    0  2  8   7 11  22  0
-## 477                Mike Brosseau  MIL   9    2    0  1  5   5  4  12  0
-## 478                 Adam Haseley  CHW   7    1    0  1  3   3  2   6  1
-## 479                   Livan Soto  LAA   8    1    0  0  4   3  4   9  1
-## 480               Liover Peguero  PIT   7    1    0  0  3   3  2   7  1
-## 481                Jordan Luplow  TOR   2    0    0  0  1   1  1   2  0
-## 482               Brayan Rocchio  CLE   3    1    0  0  2   2  1   3  0
-## 483                  Ryan OHearn  BAL  24    5    0  4 12  16  9  30  0
-## 484                Michael Busch  LAD   4    1    0  1  2   2  2   5  0
-## 485                Jose Iglesias  SDP   3    1    0  0  1   1  1   2  0
-## 486                Danny Mendick  NYM   4    1    0  0  2   2  1   4  0
-## 487                 Austin Allen  MIA   2    0    0  0  1   1  1   2  0
-## 488              Anthony Bemboom  BAL   2    0    0  0  1   1  1   3  0
-## 489                Hunter Dozier &lt;NA&gt;  39    8    2  5 20  20 15  52  2
-## 490              Yonny Hernandez  LAD   3    0    0  0  2   1  2   4  1
-## 491              Tommy La Stella &lt;NA&gt;  16    3    0  1  8   7  5  10  0
-## 492              Richie Palacios  CLE   3    1    0  0  1   1  1   3  0
-## 493           Gilberto Celestino  MIN   2    0    0  0  1   1  1   2  0
-## 494             Travis Swaggerty  PIT  14    3    1  1  7   7  7  20  2
-## 495                 Bobby Dalbec  BOS  10    2    0  2  6   7  4  16  0
-## 496                Buddy Kennedy  ARI   2    0    0  0  1   1  1   2  0
-## 497              Jordan Groshans  MIA   2    0    0  0  1   1  1   2  0
-## 498               Jake Marisnick  DET  13    3    1  1  7   6  4  20  2
-## 499                 Tres Barrera  STL   2    0    0  0  1   1  1   3  0
-## 500                 Wilson Ramos &lt;NA&gt;   4    1    0  1  2   2  1   4  0
-## 501                    Darin Ruf  MIL   6    1    0  1  4   4  4   9  0
-## 502                  Miguel Sano &lt;NA&gt;  13    3    0  3  8   9  7  24  1
-## 503             Michael Stefanic  LAA   1    0    0  0  0   0  0   1  0
-## 504                   David Bote  CHC   2    0    0  0  1   1  1   2  0
-## 505               Bubba Thompson  TEX  12    2    1  1  7   6  3  16  4
-## 506                Yonathan Daza  COL   3    1    0  0  1   1  1   2  0
-## 507                Israel Pineda  WSN   3    1    0  0  2   2  1   4  0
-## 508                 Raimel Tapia  BOS   2    0    0  0  1   1  1   2  0
-## 509               Peyton Burdick  MIA   3    1    0  1  2   2  2   6  0
-## 510                 Leury Garcia &lt;NA&gt;  13    2    0  1  5   5  3  12  1
-## 511                     Sam Huff  TEX   1    0    0  0  0   1  0   1  0
-## 512                 Eguy Rosario  SDP   1    0    0  0  1   0  0   1  0
-## 513               Rafael Marchan  PHI   2    1    0  0  1   1  1   2  0
-## 514                     Jo Adell  LAA  10    2    0  2  6   7  3  18  1
-## 515                  Riley Adams  WSN  25    6    1  4 14  16 13  43  0
-## 516                Andre Lipcius  DET   1    0    0  0  0   0  0   1  0
-## 517                Johan Camargo  KCR   1    0    0  0  0   0  0   1  0
-## 518              Franchy Cordero  NYY   2    0    0  0  1   1  1   3  0
-## 519               Dalton Guthrie  PHI   9    2    0  1  5   5  3  11  1
-## 520              Braden Shewmake  ATL   6    1    0  1  3   3  2   6  0
-## 521               Chadwick Tromp  ATL   3    1    0  0  1   1  1   3  0
-## 522                Bryce Johnson  SFG   5    1    0  0  3   2  2   8  1
-## 523              Hunter Feduccia  LAD   1    0    0  0  0   0  0   1  0
-## 524                    Korey Lee  HOU   2    0    0  0  1   1  1   3  0
-## 525                  Nick Loftin  KCR   1    0    0  0  0   0  0   1  0
-## 526          Canaan Smith Njigba  PIT  12    3    0  1  7   6  7  18  1
-## 527                 Payton Henry  MIL   2    0    0  0  1   1  1   3  0
-## 528              Abraham Almonte  NYM   1    0    0  0  1   0  1   1  0
-## 529                  Will Benson  CIN  12    2    1  2  8   7  9  21  2
-## 530                 Rylan Bannon  HOU   1    0    0  0  0   1  0   1  0
-## 531                Luis Gonzalez  SFG   1    0    0  0  0   0  0   1  0
-## 532                Davis Wendzel  TEX   1    0    0  0  0   0  0   1  0
-## 533                 Tony Wolters  MIN   2    0    0  0  1   1  1   3  0
-## 534                    Jake Lamb  LAA   1    0    0  0  1   0  0   1  0
-## 535                Franmil Reyes  WSN   3    0    0  1  1   2  1   4  0
-## 536                David Hensley  HOU   9    2    0  1  5   4  5  12  1
-## 537                  Cole Tucker  COL   2    0    0  0  1   1  1   2  0
-## 538                 Chris Owings  PIT   1    0    0  0  0   0  0   1  0
-## 539                Luis Liberato  SDP   2    0    0  0  1   1  1   3  0
-## 540                  Chad Pinder &lt;NA&gt;   1    0    0  0  0   0  0   1  0
-## 541                 Cade Marlowe  SEA   1    0    0  0  0   0  0   1  0
-## 542               Yoshi Tsutsugo  TEX   1    0    0  0  0   0  1   1  0
-## 543                    David Fry  CLE   9    2    0  1  5   5  3  11  0
-## 544             Nelson Velazquez  CHC   4    1    0  1  2   2  1   6  0
-## 545                   Matt Beaty  SFG   1    0    0  0  0   0  0   1  0
-## 546                Stone Garrett  WSN  25    5    0  5 14  15  6  35  2
-## 547                  Jeter Downs  WSN   3    1    0  1  2   2  2   6  0
-## 548                  Roman Quinn  MIL   2    0    0  0  1   1  1   3  0
-## 549                Luke Williams  ATL   1    0    0  0  1   0  0   1  0
-## 550                 Heliot Ramos  SFG   1    0    0  0  0   0  0   1  0
-## 551                  Brad Miller  TEX  23    4    0  4 13  14 12  32  1
-## 552                Erik Gonzalez  CHW   2    0    0  0  1   1  0   2  0
-## 553                   David Dahl  SDP  12    3    0  1  7   6  4  15  0
-## 554               Parker Meadows  DET  20    4    1  2 10   9  8  23  1
-## 555                    Eli White  ATL   3    1    0  0  2   2  2   6  1
-## 556              Alcides Escobar &lt;NA&gt;   8    2    0  0  3   3  2   7  0
-## 557                 CJ Alexander  KCR   1    0    0  0  0   0  0   1  0
-## 558                   Sandy Leon  TEX   4    1    0  0  2   2  2   7  0
-## 559               Ehire Adrianza  ATL   8    2    0  1  4   4  4   9  0
-## 560                   Nate Eaton  KCR   9    2    0  1  5   4  3  11  2
-## 561                Alfonso Rivas  SDP  19    4    1  1 10   9 10  27  1
-## 562            Aaron Shackelford  PIT   2    0    0  0  1   1  1   3  0
-## 563             Tyler Soderstrom  OAK   2    0    0  0  1   1  0   3  0
-## 564                Blake Perkins  MIL  13    3    0  2  8   7  8  21  2
-## 565                Michael Siani  CIN   2    0    0  0  1   1  1   3  0
-## 566               Grae Kessinger  HOU   7    1    0  1  4   4  4  11  1
-## 567                  T J Hopkins  CIN   8    2    0  1  4   5  3  12  0
-## 568                Scott Kingery  PHI   4    1    0  0  2   2  2   7  1
-## 569               Cristian Pache  PHI  17    4    0  2  8   9  5  23  1
-## 570               Billy Hamilton  CHW   2    0    0  0  2   1  1   4  1
-## 571                    Mike Ford  SEA  24    5    0  4 13  14 14  31  0
-## 572                  Jose Azocar  SDP  18    3    1  1  8   7  4  19  3
-## 573                   Edwin Rios  CHC  12    3    0  3  8   8  6  24  0
-## 574                  Luken Baker  STL   8    2    0  1  4   5  3  11  0
-## 575              Garrett Hampson  MIA  19    4    1  1 10   7  7  26  4
-## 576               Jackie Bradley  KCR  39   10    1  4 20  18 14  50  2
-## 577                Jesus Aguilar &lt;NA&gt;  18    3    0  3  8  10  6  19  0
-## 578                 Jose Barrero  CIN  16    4    0  2  9   9  6  28  2
-## 579                Eddie Rosario  ATL  71   14    2 11 36  40 17  66  4
-## 580               Michael Toglia  COL  11    2    0  2  6   7  5  18  0
-## 581                Clint Frazier  CHW  13    3    0  2  7   7  7  22  1
-## 582                   Joey Votto  CIN  42    8    1  7 25  26 26  62  0
-## 583            Charlie Culberson  ATL  14    3    0  1  7   6  3  18  1
-## 584               Miguel Cabrera  DET  49    7    0  4 18  22 17  51  0
-##        last_name  first_name    C   1B 2B.y   SS 3B.y   OF   DH
-## 1          Judge       Aaron                             X    X
-## 2           Soto        Juan                             X     
-## 3          Acuna      Ronald                             X    X
-## 4          Trout        Mike                             X     
-## 5           &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 6          Betts      Mookie                             X     
-## 7        Alvarez      Yordan                             X    X
-## 8         Franco      Wander                   X               
-## 9        Ramirez        Jose                        X         X
-## 10       Bregman        Alex                        X          
-## 11        Semien      Marcus              X                    
-## 12     Rutschman       Adley    X                              
-## 13       Freeman     Freddie         X                         
-## 14     Rodriguez       Julio                             X     
-## 15        Seager       Corey                   X               
-## 16        Tucker        Kyle                             X     
-## 17      Bichette          Bo                   X               
-## 18       Chapman        Matt                        X          
-## 19       Arenado       Nolan                        X          
-## 20         Smith        Will    X                             X
-## 21        Lindor   Francisco                   X               
-## 22        Devers      Rafael                        X          
-## 23         Nimmo     Brandon                             X     
-## 24   Goldschmidt        Paul         X                        X
-## 25        Turner        Trea                   X               
-## 26       Swanson      Dansby                   X               
-## 27        Murphy        Sean    X                             X
-## 28      Bogaerts      Xander                   X               
-## 29        Correa      Carlos                   X               
-## 30         Riley      Austin                        X          
-## 31  Guerrero Jr.    Vladimir         X                        X
-## 32        Altuve        Jose              X                    
-## 33        Alonso        Pete         X                        X
-## 34      Realmuto        J.T.    X                              
-## 35        Arraez        Luis         X    X                   X
-## 36         Olson        Matt         X                         
-## 37        Robert        Luis                             X     
-## 38       Machado       Manny                        X          
-## 39       Gimenez      Andres              X                    
-## 40          &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 41      Springer      George                             X    X
-## 42          Diaz       Yandy                        X          
-## 43          Heim       Jonah    X                              
-## 44         Bader    Harrison                             X     
-## 45        Rendon     Anthony                        X          
-## 46        Adames       Willy                   X               
-## 47       Carroll      Corbin                             X     
-## 48       Hoerner        Nico                   X               
-## 49     Arozarena       Randy                             X    X
-## 50      Reynolds       Bryan                             X     
-## 51        Ohtani      Shohei                                  X
-## 52        Harper       Bryce                                  X
-## 53        Albies       Ozzie              X                    
-## 54        McNeil        Jeff              X              X     
-## 55          &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 56         Muncy         Max              X         X         X
-## 57          Kirk   Alejandro    X                             X
-## 58       Mullins      Cedric                             X     
-## 59        Torres     Gleyber              X                    
-## 60      Witt Jr.       Bobby                   X    X          
-## 61        Buxton       Byron                             X    X
-## 62        Varsho     Daulton    X                        X     
-## 63          Kwan      Steven                             X     
-## 64         Edman       Tommy              X    X               
-## 65     Henderson      Gunnar                        X          
-## 66      Crawford        J.P.                   X               
-## 67          Pena      Jeremy                   X               
-## 68       Verdugo        Alex                             X     
-## 69        France          Ty         X                         
-## 70       Polanco       Jorge              X                    
-## 71       Raleigh         Cal    X                              
-## 72          Lowe     Brandon              X                    
-## 73        Walker   Christian         X                         
-## 74         Marte       Ketel              X                   X
-## 75         Hayes    Ke&#39;Bryan                        X          
-## 76        Suzuki       Seiya                             X     
-## 77        Vargas      Miguel         X                         
-## 78          Jung        Josh                        X          
-## 79      Nootbaar        Lars                             X     
-## 80      Anderson         Tim                   X               
-## 81          Happ         Ian                             X     
-## 82       Paredes       Isaac         X    X         X          
-## 83          Lowe   Nathaniel         X                         
-## 84       Moncada        Yoan                        X          
-## 85        Yelich   Christian                             X    X
-## 86          Baty       Brett                        X          
-## 87          Siri        Jose                             X     
-## 88          &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 89        Garcia      Adolis                             X    X
-## 90   Yastrzemski        Mike                             X     
-## 91   Pasquantino      Vinnie         X                        X
-## 92          Hays      Austin                             X     
-## 93      LeMahieu          DJ         X    X         X          
-## 94           Kim    Ha-Seong                   X    X          
-## 95          &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 96       Grisham       Trent                             X     
-## 97         Lewis       Royce                   X               
-## 98         Rizzo     Anthony         X                         
-## 99       Grandal     Yasmani    X                             X
-## 100      Renfroe      Hunter                             X     
-## 101    Contreras     Willson    X                             X
-## 102         Baez      Javier                   X               
-## 103    Contreras     William    X                             X
-## 104  Cronenworth        Jake              X                    
-## 105       Vaughn      Andrew                             X    X
-## 106   Benintendi      Andrew                             X     
-## 107    Bellinger        Cody                             X     
-## 108      Stanton   Giancarlo                             X    X
-## 109       Suarez     Eugenio                        X          
-## 110      McMahon        Ryan                        X          
-## 111        Perez    Salvador    X                             X
-## 112       Greene       Riley                             X     
-## 113        Arcia     Orlando              X                    
-## 114      Estrada      Thairo              X    X               
-## 115      Jimenez        Eloy                             X    X
-## 116    Santander     Anthony                             X    X
-## 117      Taveras       Leody                             X     
-## 118   Candelario      Jeimer                        X          
-## 119      Trevino        Jose    X                              
-## 120      Rosario        Amed                   X               
-## 121    Kiermaier       Kevin                             X     
-## 122        Urias        Luis              X    X    X          
-## 123        Davis        J.D.                        X         X
-## 124        Marte    Starling                             X     
-## 125         Ruiz     Esteury                             X     
-## 126       Outman       James                             X     
-## 127         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 128      Gurriel     Lourdes                             X     
-## 129     Laureano       Ramon                             X     
-## 130    Schwarber        Kyle                             X     
-## 131       DeJong        Paul                   X               
-## 132       Kepler         Max                             X     
-## 133       Gorman       Nolan              X                    
-## 134     Chisholm        Jazz              X                    
-## 135        Mateo       Jorge                   X               
-## 136      Alvarez   Francisco                                  X
-## 137       Garver       Mitch                                  X
-## 138         Ward      Taylor                             X     
-## 139         Lowe        Josh                             X     
-## 140        India    Jonathan              X                    
-## 141        Walls      Taylor              X    X    X          
-## 142       Moreno     Gabriel    X                              
-## 143  Mountcastle        Ryan         X                        X
-## 144    Hernandez     Teoscar                             X     
-## 145       Jansen       Danny    X                              
-## 146         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 147      Narvaez        Omar    X                              
-## 148        Rojas        Josh              X         X          
-## 149       Taylor       Chris              X              X     
-## 150       Duvall        Adam                             X     
-## 151       Tellez       Rowdy         X                         
-## 152        Urias       Ramon                        X          
-## 153         Ruiz     Keibert    X                              
-## 154      Vazquez   Christian    X                              
-## 155       Naylor        Josh         X                        X
-## 156      Donovan     Brendan              X         X    X     
-## 157      Kelenic      Jarred                             X     
-## 158    Donaldson        Josh                        X         X
-## 159        Tovar    Ezequiel                   X               
-## 160    Hernandez     Enrique                             X     
-## 161     Crawford     Brandon                   X               
-## 162      Espinal    Santiago              X                    
-## 163        Stott      Bryson              X    X               
-## 164  Bethancourt   Christian    X    X                         
-## 165      Jeffers        Ryan    X                              
-## 166        Gallo        Joey                             X     
-## 167     d&#39;Arnaud      Travis    X                              
-## 168       Turner      Justin                        X         X
-## 169         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 170        Soler       Jorge                             X     
-## 171       Wendle        Joey              X    X    X          
-## 172       Wisdom     Patrick                        X          
-## 173     Pederson         Joc                             X     
-## 174     Suwinski        Jack                             X     
-## 175      Haniger       Mitch                             X     
-## 176        Canha        Mark                             X     
-## 177       Meyers        Jake                             X     
-## 178        Straw       Myles                             X     
-## 179       Zunino        Mike    X                              
-## 180      Carlson       Dylan                             X     
-## 181    McCormick        Chas                             X     
-## 182        Drury     Brandon         X              X         X
-## 183         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 184       Segura        Jean              X                    
-## 185       Fortes        Nick    X                              
-## 186          Joe      Connor         X                   X    X
-## 187        Casas     Triston         X                         
-## 188       Rooker       Brent                             X     
-## 189       Margot      Manuel                             X     
-## 190        Abreu        Jose         X                        X
-## 191   Higashioka        Kyle    X                              
-## 192        Lopez       Nicky              X    X    X          
-## 193      Frazier        Adam              X              X     
-## 194        Rojas      Miguel                   X               
-## 195     Martinez        J.D.                                  X
-## 196        Marsh     Brandon                             X     
-## 197       Waters        Drew                             X     
-## 198         Wong      Kolten              X                    
-## 199         Bell        Josh         X                        X
-## 200   De La Cruz       Bryan                             X     
-## 201       Bryant        Kris                             X     
-## 202         Kemp        Tony              X              X     
-## 203         Wade     LaMonte                             X     
-## 204        Gomes         Yan    X                              
-## 205        Morel Christopher              X              X     
-## 206      Perdomo     Geraldo                   X               
-## 207      O&#39;Neill       Tyler                             X     
-## 208        Steer     Spencer                        X          
-## 209       Fraley        Jake                             X     
-## 210        Brown        Seth         X                   X     
-## 211         Wong      Connor    X                              
-## 212       Taylor  Michael A.                             X     
-## 213       Abrams          CJ                   X               
-## 214        Berti         Jon              X         X          
-## 215         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 216       Garcia        Luis              X    X               
-## 217       Slater      Austin                             X     
-## 218       Baddoo        Akil                             X     
-## 219       Friedl          TJ                             X     
-## 220      Meadows      Austin                             X     
-## 221     Melendez          MJ    X                        X     
-## 222       Garcia      Maikel                   X               
-## 223        Smith     Josh H.                        X    X     
-## 224    Kirilloff        Alex                             X     
-## 225     McCarthy        Jake                             X     
-## 226        Allen        Nick              X    X               
-## 227   Langeliers        Shea                                  X
-## 228      McGuire       Reese    X                              
-## 229        Duran    Ezequiel                        X          
-## 230   Merrifield        Whit              X              X     
-## 231         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 232         Belt     Brandon         X                         
-## 233      Sanchez       Jesus                             X     
-## 234      Rengifo        Luis              X         X          
-## 235     Peterson        Jace                        X          
-## 236      Urshela         Gio                        X          
-## 237        Story      Trevor              X                    
-## 238         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 239  Castellanos        Nick                             X     
-## 240      Grichuk      Randal                             X     
-## 241       Thomas        Lane                             X     
-## 242         Diaz      Yainer                                  X
-## 243     Anderson       Brian                        X    X     
-## 244          Bae     Ji-Hwan                             X     
-## 245        Maton        Nick                             X     
-## 246       Flores      Wilmer         X    X         X         X
-## 247    McKinstry        Zach                        X          
-## 248         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 249       Murphy         Tom    X                              
-## 250       Massey     Michael              X                    
-## 251    Torkelson     Spencer         X                         
-## 252        Dubon    Mauricio                   X         X     
-## 253         Bohm        Alec                        X          
-## 254      Meneses        Joey         X                         
-## 255         Cruz       Oneil                   X               
-## 256        Kelly      Carson    X                              
-## 257     Olivares      Edward                             X     
-## 258    McCutchen      Andrew                             X    X
-## 259    Stallings       Jacob    X                              
-## 260      Heyward       Jason                             X     
-## 261         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 262      Marcano    Tucupita                             X     
-## 263       Pratto        Nick         X                         
-## 264   Stephenson       Tyler    X                              
-## 265       Schoop    Jonathan              X                    
-## 266     Caratini      Victor    X                              
-## 267       Robles      Victor                             X     
-## 268       Castro     Rodolfo              X         X          
-## 269      Brennan        Will                             X     
-## 270         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 271      Sanchez        Gary    X                             X
-## 272       Farmer        Kyle                   X    X          
-## 273     Brantley     Michael                             X    X
-## 274        Raley        Luke                             X     
-## 275       Andrus       Elvis                   X               
-## 276       Naylor          Bo    X                              
-## 277       Burger        Jake                        X          
-## 278         Sosa     Edmundo                   X    X          
-## 279      Peralta       David                             X     
-## 280        Walsh       Jared         X                         
-## 281         Call        Alex                             X     
-## 282     Longoria        Evan                        X          
-## 283       McCann       James    X                              
-## 284     Thompson      Trayce                             X     
-## 285         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 286      Ramirez      Harold         X                   X    X
-## 287    Carpenter       Kerry                             X     
-## 288        Ozuna     Marcell                             X    X
-## 289       Winker       Jesse                             X     
-## 290    Guillorme        Luis              X                    
-## 291      Santana      Carlos         X                        X
-## 292       Cooper     Garrett         X                        X
-## 293        Haase        Eric    X                              
-## 294       Arroyo   Christian              X                    
-## 295       Hedges      Austin    X                              
-## 296         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 297        Mejia   Francisco    X                              
-## 298         Pina       Manny    X                              
-## 299        Isbel        Kyle                             X     
-## 300         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 301         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 302       Thaiss        Matt    X                              
-## 303      Mondesi   Adalberto                   X               
-## 304        Bride       Jonah              X         X          
-## 305        Duran      Jarren                             X     
-## 306         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 307      Miranda        Jose         X              X          
-## 308       Miller        Owen         X    X                   X
-## 309       Barnes      Austin    X                              
-## 310        Ahmed        Nick                   X               
-## 311         Nola      Austin    X                              
-## 312       Thomas        Alek                             X     
-## 313       Profar   Jurickson                             X     
-## 314       Stassi         Max    X                              
-## 315       Zavala        Seby    X                              
-## 316         Cron        C.J.         X                        X
-## 317         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 318     Grossman      Robbie                             X     
-## 319         Diaz     Aledmys                             X     
-## 320      Escobar     Eduardo                        X          
-## 321        Moore       Dylan                   X         X     
-## 322         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 323        Maile        Luke    X                              
-## 324         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 325       Senzel        Nick                             X     
-## 326    Refsnyder         Rob                             X     
-## 327     Palacios        Josh                             X     
-## 328         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 329       Ibanez        Andy                        X          
-## 330         Choi      Ji-Man         X                         
-## 331       Bleday          JJ                             X     
-## 332       Sheets       Gavin                             X     
-## 333         Pham       Tommy                             X     
-## 334       Garcia     Avisail                             X     
-## 335         Odor     Rougned              X                    
-## 336       Castro       Willi                             X     
-## 337        Smith     Dominic         X                         
-## 338      Cabrera     Oswaldo                             X     
-## 339       Solano     Donovan         X                        X
-## 340        Jones       Nolan                             X     
-## 341     Burleson        Alec                             X     
-## 342      Knizner      Andrew    X                              
-## 343        Perez      Carlos    X                              
-## 344     Barnhart      Tucker    X                              
-## 345    Fairchild      Stuart                             X     
-## 346         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 347 Kiner-Falefa       Isiah                   X               
-## 348         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 349         Diaz      Jordan              X                    
-## 350    Jankowski      Travis                             X     
-## 351         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 352        Short        Zack                   X               
-## 353         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 354      Vientos        Mark                                  X
-## 355       Biggio       Cavan         X    X                    
-## 356         Diaz       Elias    X                              
-## 357       Fermin      Freddy    X                              
-## 358       Newman       Kevin              X    X               
-## 359     Gonzalez       Oscar                             X     
-## 360        Lewis        Kyle                                  X
-## 361         Bart        Joey    X                              
-## 362        Wynns      Austin    X                              
-## 363    Carpenter        Matt                             X    X
-## 364     Harrison        Josh              X         X          
-## 365      Calhoun      Willie                                  X
-## 366      Freeman       Tyler                        X          
-## 367         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 368       Peraza      Oswald                   X               
-## 369        Davis    Jonathan                             X     
-## 370     Heineman       Tyler    X                              
-## 371       Vargas    Ildemaro                        X          
-## 372      Mancini        Trey         X                   X    X
-## 373       Taylor      Tyrone                             X     
-## 374       Casali        Curt    X                              
-## 375        Delay       Jason    X                              
-## 376         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 377     Gonzalez        Romy              X                    
-## 378        Myers         Wil         X                   X     
-## 379      Mathias        Mark                                  X
-## 380        Smith       Pavin                             X    X
-## 381     Madrigal        Nick              X                    
-## 382      Wallach        Chad    X                              
-## 383      Larnach      Trevor                             X     
-## 384         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 385         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 386    Dickerson       Corey                             X    X
-## 387        Duffy        Matt                        X          
-## 388       Villar       David                        X          
-## 389      Grissom      Vaughn              X                    
-## 390       Gordon        Nick              X              X     
-## 391         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 392         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 393         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 394         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 395        Sands       Donny    X                             X
-## 396    Campusano        Luis    X                              
-## 397        Allen        Greg                             X     
-## 398        Hicks       Aaron                             X     
-## 399       Rivera    Emmanuel                        X          
-## 400        Reyes       Pablo                   X               
-## 401       Alfaro       Jorge    X                              
-## 402      Wallner        Matt                             X     
-## 403         Toro     Abraham              X         X         X
-## 404         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 405        Vavra      Terrin              X                    
-## 406         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 407     Haggerty         Sam                             X     
-## 408         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 409     Kreidler        Ryan                   X               
-## 410     Hilliard         Sam                             X     
-## 411     Vierling        Matt                             X     
-## 412       Stubbs     Garrett    X                              
-## 413     Blackmon     Charlie                             X    X
-## 414         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 415         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 416       Brujan       Vidal              X                    
-## 417         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 418        Yepez        Juan                             X     
-## 419       Serven       Brian    X                              
-## 420        Smith       Kevin                        X          
-## 421     Trammell      Taylor                             X     
-## 422        Trejo        Alan                   X               
-## 423         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 424         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 425     Mitchell     Garrett                             X     
-## 426       Aranda    Jonathan              X                    
-## 427      Montero    Elehuris                        X          
-## 428         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 429    Maldonado      Martin    X                              
-## 430  Mastrobuoni       Miles              X                    
-## 431         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 432         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 433         Voit        Luke         X                        X
-## 434         Cave        Jake                             X     
-## 435       Hummel      Cooper                             X     
-## 436      Mercado       Oscar                             X     
-## 437       Chavis     Michael         X                         
-## 438         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 439         Hall      Darick                                  X
-## 440      Herrera        Jose    X                              
-## 441      Garlick        Kyle                             X     
-## 442    Moustakas        Mike         X              X         X
-## 443         Sosa       Lenyn              X                    
-## 444      Clement       Ernie                        X          
-## 445       Pillar       Kevin                             X     
-## 446       Moniak      Mickey                             X     
-## 447        Capel      Conner                             X     
-## 448        Pinto        Rene    X                              
-## 449         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 450         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 451         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 452       Hosmer        Eric         X                         
-## 453    Gallagher         Cam    X                              
-## 454        Ellis        Drew                        X          
-## 455         Cruz      Nelson                                  X
-## 456       Lester        Josh                        X         X
-## 457     Fletcher       David              X    X               
-## 458         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 459        Dixon     Brandon                        X         X
-## 460         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 461        Lopez        Otto                   X               
-## 462         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 463     Mitchell         Cal                             X     
-## 464         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 465       Castro      Harold         X              X          
-## 466      Stowers        Kyle                             X     
-## 467         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 468         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 469        Perez     Michael    X                              
-## 470         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 471        Nevin       Tyler                        X          
-## 472         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 473      Clemens        Kody         X              X          
-## 474      McKenna        Ryan                             X     
-## 475         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 476         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 477         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 478      Haseley        Adam                             X     
-## 479         Soto       Livan                   X               
-## 480      Peguero      Liover                   X               
-## 481       Luplow      Jordan                             X     
-## 482         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 483      O&#39;Hearn        Ryan                                  X
-## 484         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 485     Iglesias        Jose                   X               
-## 486      Mendick       Danny                   X               
-## 487        Allen      Austin    X                              
-## 488      Bemboom     Anthony    X                              
-## 489       Dozier      Hunter         X              X    X    X
-## 490    Hernandez       Yonny                        X          
-## 491    La Stella       Tommy                                  X
-## 492     Palacios      Richie                             X     
-## 493    Celestino    Gilberto                             X     
-## 494    Swaggerty      Travis                             X     
-## 495       Dalbec       Bobby         X              X          
-## 496      Kennedy       Buddy              X                    
-## 497     Groshans      Jordan                        X          
-## 498    Marisnick        Jake                             X     
-## 499      Barrera        Tres    X                              
-## 500         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 501          Ruf       Darin         X                   X    X
-## 502         Sano      Miguel         X                         
-## 503     Stefanic     Michael              X                    
-## 504         Bote       David              X                    
-## 505     Thompson       Bubba                             X     
-## 506         Daza    Yonathan                             X     
-## 507       Pineda      Israel    X                              
-## 508        Tapia      Raimel                             X     
-## 509      Burdick      Peyton                             X     
-## 510       Garcia       Leury              X              X     
-## 511         Huff         Sam    X                              
-## 512      Rosario        Eguy                        X          
-## 513         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 514        Adell          Jo                             X     
-## 515        Adams       Riley    X                              
-## 516         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 517      Camargo       Johan                   X               
-## 518      Cordero     Franchy         X                   X     
-## 519      Guthrie      Dalton                             X     
-## 520         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 521        Tromp    Chadwick    X                              
-## 522      Johnson       Bryce                             X     
-## 523         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 524          Lee       Korey    X                              
-## 525         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 526 Smith-Njigba      Canaan                             X     
-## 527        Henry      Payton    X                              
-## 528      Almonte     Abraham                             X     
-## 529       Benson        Will                             X     
-## 530       Bannon       Rylan                        X          
-## 531     Gonzalez        Luis                             X     
-## 532         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 533      Wolters        Tony    X         X                    
-## 534         Lamb        Jake                             X     
-## 535        Reyes     Franmil                                  X
-## 536      Hensley       David                                  X
-## 537       Tucker        Cole                             X     
-## 538       Owings       Chris              X                    
-## 539     Liberato        Luis                             X    X
-## 540       Pinder        Chad                             X     
-## 541         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 542         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 543         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 544    Velazquez      Nelson                             X     
-## 545        Beaty        Matt                             X     
-## 546      Garrett       Stone                             X     
-## 547        Downs       Jeter                        X          
-## 548        Quinn       Roman                             X     
-## 549     Williams        Luke                        X    X     
-## 550        Ramos      Heliot                             X     
-## 551       Miller        Brad                        X    X    X
-## 552     Gonzalez        Erik                   X               
-## 553         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 554         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 555        White         Eli                             X     
-## 556      Escobar     Alcides                   X               
-## 557         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 558         Leon       Sandy    X                              
-## 559     Adrianza       Ehire                        X          
-## 560        Eaton        Nate                             X     
-## 561        Rivas     Alfonso         X                         
-## 562         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 563         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 564         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 565         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 566         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 567         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 568      Kingery       Scott              X                    
-## 569        Pache    Cristian                             X     
-## 570     Hamilton       Billy                             X     
-## 571         Ford        Mike         X                         
-## 572       Azocar        Jose                             X     
-## 573         Rios       Edwin                                  X
-## 574         &lt;NA&gt;        &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;
-## 575      Hampson     Garrett                   X         X     
-## 576      Bradley      Jackie                             X     
-## 577      Aguilar       Jesus         X                        X
-## 578      Barrero        Jose                   X               
-## 579      Rosario       Eddie                             X     
-## 580       Toglia     Michael         X                   X     
-## 581      Frazier       Clint                                  X
-## 582        Votto        Joey         X                         
-## 583    Culberson     Charlie                        X          
-## 584      Cabrera      Miguel                                  X</code></pre>
+    Player = janitor::make_clean_names(Player, case = &#39;none&#39;),
+    Team = str_replace_all(Team, &#39;SD&#39;, &#39;SDP&#39;),
+    Team = str_replace_all(Team, &#39;TB&#39;, &#39;TBR&#39;),
+    Team = str_replace_all(Team, &#39;CWS&#39;, &#39;CHW&#39;),
+    Team = str_replace_all(Team, &#39;KC&#39;, &#39;KCR&#39;),
+    Team = str_replace_all(Team, &#39;SF&#39;, &#39;SFG&#39;),
+    Team = str_replace_all(Team, &#39;WSH&#39;, &#39;WSN&#39;))
+
+clean_positions_2 &lt;- positions_2 %&gt;%
+  .[[1]] %&gt;%
+  select(Player, Team, `Elig. Pos.`) %&gt;%
+  mutate(
+    Player = janitor::make_clean_names(Player, case = &#39;none&#39;),
+    Team = str_replace_all(Team, &#39;SD&#39;, &#39;SDP&#39;),
+    Team = str_replace_all(Team, &#39;TB&#39;, &#39;TBR&#39;),
+    Team = str_replace_all(Team, &#39;CWS&#39;, &#39;CHW&#39;),
+    Team = str_replace_all(Team, &#39;KC&#39;, &#39;KCR&#39;),
+    Team = str_replace_all(Team, &#39;SF&#39;, &#39;SFG&#39;),
+    Team = str_replace_all(Team, &#39;WSH&#39;, &#39;WSN&#39;))
+
+final_positions &lt;- clean_positions_1 %&gt;%
+  full_join(clean_positions_2) %&gt;%
+  filter(!(str_detect(`Elig. Pos.`, &#39;P&#39;) &amp; Player != &#39;Shohei_Ohtani&#39;))</code></pre>
+<pre><code>## Joining with `by = join_by(Player, Team, `Elig. Pos.`)`</code></pre>
+<pre class="r"><code>final_hitter_data &lt;- clean_hitter_data %&gt;% 
+  right_join(final_positions, by = c(&#39;PlayerName&#39;=&#39;Player&#39;, &#39;Team&#39;=&#39;Team&#39;))</code></pre>
 <pre class="r"><code>compute_batter_points &lt;- function(R, TB, RBI, BB, K, SB) {
   R + TB + RBI + BB - K + SB
 }
@@ -1578,1415 +430,870 @@ compute_pitcher_points &lt;- function(IP, H, ER, BB, K, W, L, SV, HD) {
   3*IP - H - 2*ER - BB + K + 2*W - 2*L + 5*SV + 2*HD
 }
 
-clean_hitter_data %&gt;% 
+final_hitter_data %&gt;% 
   mutate(
-    `1B` = H - `2B` -`3B` - HR,
     TB = `1B` + 2*`2B` + 3*`3B` + 4*HR,
     Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %&gt;%
-  select(PlayerName, Team, Points) %&gt;%
+  filter(str_detect(`Elig. Pos.`, &#39;3&#39;)) %&gt;%
+  select(PlayerName, Team, `Elig. Pos.`,Points) %&gt;%
   arrange(desc(Points))</code></pre>
-<pre><code>##                       PlayerName Team Points
-## 1                      Juan Soto  SDP    313
-## 2                   Ronald Acuna  ATL    308
-## 3                   Jose Ramirez  CLE    308
-## 4                Freddie Freeman  LAD    307
-## 5                    Kyle Tucker  HOU    302
-## 6                 Fernando Tatis  SDP    300
-## 7                   Mookie Betts  LAD    295
-## 8                   Alex Bregman  HOU    289
-## 9              Vladimir Guerrero  TOR    285
-## 10                   Pete Alonso  NYM    282
-## 11                 Rafael Devers  BOS    281
-## 12                   Aaron Judge  NYY    278
-## 13                Yordan Alvarez  HOU    276
-## 14                 Marcus Semien  TEX    270
-## 15                 Nolan Arenado  STL    269
-## 16                    Matt Olson  ATL    268
-## 17                 Wander Franco  TBR    262
-## 18              Paul Goldschmidt  STL    261
-## 19                   Bo Bichette  TOR    257
-## 20                    Mike Trout  LAA    255
-## 21              Masataka Yoshida  BOS    254
-## 22                 Shohei Ohtani  LAA    254
-## 23                  Corey Seager  TEX    251
-## 24                  Austin Riley  ATL    249
-## 25                   Trea Turner  PHI    246
-## 26                Bryan Reynolds  PIT    241
-## 27                  Ozzie Albies  ATL    241
-## 28              Christian Walker  ARI    241
-## 29                 Manny Machado  SDP    240
-## 30                  Bryce Harper  PHI    240
-## 31            Vinnie Pasquantino  KCR    240
-## 32                   Luis Arraez  MIA    239
-## 33                   Jose Altuve  HOU    237
-## 34              Francisco Lindor  NYM    236
-## 35               Julio Rodriguez  SEA    235
-## 36                   Steven Kwan  CLE    234
-## 37                    Yandy Diaz  TBR    233
-## 38               George Springer  TOR    231
-## 39                  Nico Hoerner  CHC    231
-## 40                    Bobby Witt  KCR    229
-## 41                 Andrew Vaughn  CHW    223
-## 42               Adley Rutschman  BAL    221
-## 43             Anthony Santander  BAL    220
-## 44                Gleyber Torres  NYY    218
-## 45                Nathaniel Lowe  TEX    218
-## 46               Randy Arozarena  TBR    217
-## 47                  Alex Verdugo  BOS    217
-## 48                    Will Smith  LAD    215
-## 49                   Josh Naylor  CLE    215
-## 50                Dansby Swanson  CHC    213
-## 51                     Ty France  SEA    213
-## 52                Kyle Schwarber  PHI    213
-## 53                Anthony Rendon  LAA    212
-## 54                   Ketel Marte  ARI    212
-## 55                 Adolis Garcia  TEX    212
-## 56               Lourdes Gurriel  ARI    212
-## 57                  Rowdy Tellez  MIL    211
-## 58                   Jeff McNeil  NYM    210
-## 59                     Max Muncy  LAD    209
-## 60                   Luis Robert  CHW    208
-## 61                  Eloy Jimenez  CHW    208
-## 62               Xander Bogaerts  SDP    207
-## 63              Christian Yelich  MIL    207
-## 64                  Matt Chapman  TOR    206
-## 65                Cedric Mullins  BAL    206
-## 66                 Brandon Nimmo  NYM    203
-## 67                Daulton Varsho  TOR    202
-## 68                 Miguel Vargas  LAD    202
-## 69             Michael Harris II  ATL    201
-## 70             Andrew Benintendi  CHW    201
-## 71                     Josh Bell  CLE    201
-## 72                Andres Gimenez  CLE    200
-## 73                   Tommy Edman  STL    200
-## 74                  Seiya Suzuki  CHC    200
-## 75                 Anthony Rizzo  NYY    200
-## 76                 Justin Turner  BOS    200
-## 77                    Jose Abreu  HOU    200
-## 78                 Jorge Polanco  MIN    199
-## 79              Nick Castellanos  PHI    199
-## 80              Jurickson Profar  COL    199
-## 81                Corbin Carroll  ARI    198
-## 82                      Ian Happ  CHC    198
-## 83                 Carlos Correa  MIN    197
-## 84              Ryan Mountcastle  BAL    197
-## 85                Salvador Perez  KCR    196
-## 86                  Byron Buxton  MIN    195
-## 87                Hunter Renfroe  LAA    195
-## 88                Jonathan India  CIN    194
-## 89                  Willy Adames  MIL    193
-## 90                   Austin Hays  BAL    193
-## 91                Starling Marte  NYM    193
-## 92              Charlie Blackmon  COL    193
-## 93                  Tim Anderson  CHW    190
-## 94                  J D Martinez  LAD    189
-## 95              Jake Cronenworth  SDP    188
-## 96                   Jeremy Pena  HOU    186
-## 97                  Amed Rosario  CLE    186
-## 98                   Jorge Soler  MIA    184
-## 99                  Joey Meneses  WSN    184
-## 100                  Sean Murphy  ATL    183
-## 101            Giancarlo Stanton  NYY    183
-## 102                 J P Crawford  SEA    182
-## 103                KeBryan Hayes  PIT    182
-## 104                  DJ LeMahieu  NYY    182
-## 105                  Luis Garcia  WSN    182
-## 106            Jeimer Candelario  WSN    179
-## 107                 Esteury Ruiz  OAK    179
-## 108                  Jake Fraley  CIN    179
-## 109            Teoscar Hernandez  SEA    178
-## 110                Mitch Haniger  SFG    178
-## 111                  MJ Melendez  KCR    177
-## 112                Triston Casas  BOS    176
-## 113            Spencer Torkelson  DET    176
-## 114                 J T Realmuto  PHI    175
-## 115               Harrison Bader  NYY    175
-## 116                 Ryan McMahon  COL    174
-## 117             Michael Conforto  SFG    174
-## 118                Orlando Arcia  ATL    173
-## 119               Jarred Kelenic  SEA    173
-## 120             Gunnar Henderson  BAL    172
-## 121               Cody Bellinger  CHC    172
-## 122                  Kris Bryant  COL    171
-## 123             Andrew McCutchen  PIT    171
-## 124               Alejandro Kirk  TOR    170
-## 125                 Keibert Ruiz  WSN    170
-## 126                Spencer Steer  CIN    170
-## 127                Lars Nootbaar  STL    168
-## 128              Whit Merrifield  TOR    168
-## 129                  Lane Thomas  WSN    168
-## 130                Anthony Volpe  NYY    167
-## 131                Leody Taveras  TEX    167
-## 132                   Max Kepler  MIN    167
-## 133               Ezequiel Tovar  COL    167
-## 134                  Matt Mervis  CHC    167
-## 135                    CJ Abrams  WSN    166
-## 136                Isaac Paredes  TBR    165
-## 137                 Nolan Gorman  STL    165
-## 138               Carlos Santana  PIT    165
-## 139             Mike Yastrzemski  SFG    164
-## 140                  Javier Baez  DET    164
-## 141                  Taylor Ward  LAA    163
-## 142               Randal Grichuk  COL    163
-## 143                 Joc Pederson  SFG    162
-## 144                    Alec Bohm  PHI    162
-## 145             Bryan De La Cruz  MIA    161
-## 146                    Josh Jung  TEX    160
-## 147                  Jean Segura  MIA    159
-## 148                 Brandon Lowe  TBR    158
-## 149                  Royce Lewis  MIN    157
-## 150                  Jorge Mateo  BAL    156
-## 151                 LaMonte Wade  SFG    156
-## 152                 Brent Rooker  OAK    155
-## 153                 Yoan Moncada  CHW    154
-## 154                Trent Grisham  SDP    153
-## 155               Eugenio Suarez  SEA    153
-## 156                 Bryson Stott  PHI    153
-## 157                Eddie Rosario  ATL    153
-## 158               Thairo Estrada  SFG    152
-## 159                  Adam Duvall  BOS    152
-## 160                     C J Cron  COL    152
-## 161                   Brett Baty  NYM    151
-## 162            William Contreras  MIL    151
-## 163              Brendan Donovan  STL    151
-## 164                  Myles Straw  CLE    151
-## 165                Brandon Drury  LAA    151
-## 166                 Adam Frazier  BAL    151
-## 167                   Luis Urias  MIL    150
-## 168                   Josh Rojas  ARI    150
-## 169                    Zach Neto  LAA    149
-## 170            Willson Contreras  STL    148
-## 171                   Mark Canha  NYM    148
-## 172            Enrique Hernandez  BOS    147
-## 173                Dominic Smith  WSN    147
-## 174                  Matt McLain  CIN    146
-## 175                  Cal Raleigh  SEA    145
-## 176                    J D Davis  SFG    144
-## 177               Travis dArnaud  ATL    144
-## 178            Christopher Morel  CHC    143
-## 179                   Seth Brown  OAK    143
-## 180              Edward Olivares  KCR    143
-## 181                  Nick Senzel  CIN    143
-## 182             Santiago Espinal  TOR    142
-## 183                   Jonah Heim  TEX    141
-## 184                 Taylor Walls  TBR    141
-## 185                 Ha Seong Kim  SDP    140
-## 186                    TJ Friedl  CIN    140
-## 187                 Miguel Rojas  LAD    139
-## 188                Jordan Walker  STL    139
-## 189               Ramon Laureano  OAK    138
-## 190                 Mitch Garver  TEX    138
-## 191                 Danny Jansen  TOR    137
-## 192               Garrett Cooper  MIA    137
-## 193                Manuel Margot  TBR    136
-## 194                    Jose Siri  TBR    135
-## 195                  Joey Wiemer  MIL    135
-## 196                Marcell Ozuna  ATL    135
-## 197               Patrick Wisdom  CHC    134
-## 198                    Tony Kemp  OAK    132
-## 199                  Ji Hwan Bae  PIT    132
-## 200                Wilmer Flores  SFG    132
-## 201                Casey Schmitt  SFG    132
-## 202                 Will Brennan  CLE    132
-## 203                Jazz Chisholm  MIA    131
-## 204               Ezequiel Duran  TEX    131
-## 205                    Alex Call  WSN    131
-## 206                 Trey Mancini  CHC    130
-## 207                  Joey Wendle  MIA    129
-## 208             Tyler Stephenson  CIN    129
-## 209                   Elias Diaz  COL    129
-## 210              Corey Dickerson  WSN    129
-## 211                Brandon Marsh  PHI    128
-## 212                  Nick Pratto  KCR    128
-## 213               Chas McCormick  HOU    127
-## 214                  Nicky Lopez  KCR    127
-## 215              Geraldo Perdomo  ARI    127
-## 216                    JJ Bleday  OAK    127
-## 217                Jake McCarthy  ARI    126
-## 218             Brandon Crawford  SFG    125
-## 219               Alex Kirilloff  MIN    125
-## 220                 Jesse Winker  MIL    125
-## 221                  Drew Waters  KCR    124
-## 222               Brian Anderson  MIL    124
-## 223                  Paul DeJong  STL    123
-## 224                    Josh Lowe  TBR    123
-## 225                 Chris Taylor  LAD    123
-## 226                 Riley Greene  DET    122
-## 227                 James Outman  LAD    122
-## 228                   Connor Joe  PIT    122
-## 229                 Elvis Andrus  CHW    121
-## 230                Jack Suwinski  PIT    120
-## 231              Jonathan Schoop  DET    120
-## 232           Isiah Kiner Falefa  NYY    120
-## 233                Matt Vierling  DET    120
-## 234                  Jared Walsh  LAA    119
-## 235              Kevin Kiermaier  TOR    118
-## 236             Tucupita Marcano  PIT    118
-## 237               Harold Ramirez  TBR    118
-## 238              Kerry Carpenter  DET    118
-## 239               Josh Donaldson  NYY    117
-## 240                Dylan Carlson  STL    117
-## 241               Austin Meadows  DET    116
-## 242                   Nick Allen  OAK    116
-## 243                Victor Robles  WSN    116
-## 244                  Kolten Wong  SEA    115
-## 245                 Brandon Belt  TOR    114
-## 246              Yasmani Grandal  CHW    112
-## 247                  Ramon Urias  BAL    112
-## 248              Elly De La Cruz  CIN    111
-## 249                  Akil Baddoo  DET    111
-## 250                   Nick Maton  DET    111
-## 251                David Peralta  LAD    111
-## 252               Gabriel Moreno  ARI    109
-## 253                Maikel Garcia  KCR    109
-## 254             Michael Brantley  HOU    109
-## 255                 Luis Rengifo  LAA    108
-## 256                Jason Heyward  LAD    108
-## 257                   Tommy Pham  NYM    108
-## 258                Harold Castro  COL    108
-## 259                    Yan Gomes  CHC    107
-## 260                Jesus Sanchez  MIA    107
-## 261               Rodolfo Castro  PIT    107
-## 262               Michael Massey  KCR    106
-## 263               Mauricio Dubon  HOU    106
-## 264                  Pavin Smith  ARI    106
-## 265                    Jon Berti  MIA    105
-## 266              Shea Langeliers  OAK    105
-## 267                Jace Peterson  OAK    105
-## 268               Matt Carpenter  SDP    105
-## 269                    Ryan Noda  OAK    104
-## 270                 Brice Turang  MIL    104
-## 271                   Joey Gallo  MIN    103
-## 272             Daniel Vogelbach  NYM    103
-## 273              Robbie Grossman  TEX    103
-## 274                    Wil Myers  CIN    103
-## 275                  Gio Urshela  LAA    102
-## 276                 Edmundo Sosa  PHI    102
-## 277                 Gavin Sheets  CHW    102
-## 278                 Trevor Story  BOS    101
-## 279                  Jake Burger  CHW    101
-## 280                   AJ Pollock  SEA    101
-## 281                Evan Longoria  ARI    100
-## 282            Christian Vazquez  MIN     96
-## 283                  Jake Meyers  HOU     95
-## 284                 Tyler ONeill  STL     94
-## 285                   Eric Haase  DET     94
-## 286                  Connor Wong  BOS     93
-## 287                Gabriel Arias  CLE     93
-## 288                 Aledmys Diaz  OAK     92
-## 289                  Nolan Jones  COL     92
-## 290                 Jose Trevino  NYY     91
-## 291               Zach McKinstry  DET     91
-## 292               Avisail Garcia  MIA     91
-## 293             Michael A Taylor  MIN     90
-## 294                   Kyle Isbel  KCR     90
-## 295               Mike Moustakas  COL     90
-## 296                 Josh H Smith  TEX     88
-## 297                   Joey Votto  CIN     88
-## 298                Austin Slater  SFG     87
-## 299                  Nick Fortes  MIA     86
-## 300                 Kevin Newman  CIN     86
-## 301            Francisco Alvarez  NYM     85
-## 302                  Owen Miller  MIL     85
-## 303               Oscar Gonzalez  CLE     84
-## 304                 Omar Narvaez  NYM     83
-## 305                  Kyle Farmer  MIN     83
-## 306                 Yuli Gurriel  MIA     83
-## 307        Christian Bethancourt  TBR     82
-## 308              Eduardo Escobar  NYM     82
-## 309                  Ji Man Choi  PIT     82
-## 310                Tyrone Taylor  MIL     82
-## 311                   Alan Trejo  COL     82
-## 312              Francisco Mejia  TBR     81
-## 313                  Eric Hosmer &lt;NA&gt;     81
-## 314                  Oscar Colas  CHW     80
-## 315                   Luke Raley  TBR     79
-## 316                  Yainer Diaz  HOU     77
-## 317             Christian Arroyo  BOS     77
-## 318                 Rougned Odor  SDP     77
-## 319               Jose Caballero  SEA     76
-## 320                   Kyle Lewis  ARI     76
-## 321               Endy Rodriguez  PIT     75
-## 322                 Jarren Duran  BOS     75
-## 323                   Oneil Cruz  PIT     74
-## 324                Mickey Moniak  LAA     74
-## 325               Miguel Cabrera  DET     74
-## 326                Josh Harrison  PHI     73
-## 327             Stuart Fairchild  CIN     72
-## 328            Adalberto Mondesi  BOS     71
-## 329                 Kody Clemens  PHI     71
-## 330                Hunter Dozier &lt;NA&gt;     71
-## 331              Kyle Higashioka  NYY     69
-## 332                   Nick Ahmed  ARI     69
-## 333                Brenton Doyle  COL     69
-## 334               Trevor Larnach  MIN     69
-## 335                 Gary Sanchez  SDP     68
-## 336              Oswaldo Cabrera  NYY     68
-## 337              Jacob Stallings  MIA     67
-## 338               Willie Calhoun  NYY     67
-## 339             Martin Maldonado  HOU     67
-## 340               Jackie Bradley  KCR     67
-## 341                  Blake Sabol  SFG     66
-## 342                  Matt Thaiss  LAA     66
-## 343                  Austin Nola  SDP     66
-## 344                 Ryan Jeffers  MIN     65
-## 345                  Jake Rogers  DET     65
-## 346                 Carson Kelly  ARI     65
-## 347                 Jorge Alfaro &lt;NA&gt;     65
-## 348                  Mike Zunino  CLE     64
-## 349                Reese McGuire  BOS     64
-## 350                Alec Burleson  STL     64
-## 351              Ildemaro Vargas  WSN     64
-## 352                  Dylan Moore  SEA     63
-## 353                Romy Gonzalez  CHW     63
-## 354              Victor Caratini  MIL     61
-## 355               Andrew Knizner  STL     61
-## 356              Trayce Thompson  LAD     60
-## 357                  Alek Thomas  ARI     59
-## 358                  Nelson Cruz  SDP     59
-## 359                 Willi Castro  MIN     58
-## 360             Travis Jankowski  TEX     58
-## 361                   Tom Murphy  SEA     56
-## 362                 James McCann  BAL     56
-## 363               Luis Guillorme  NYM     56
-## 364                 Brett Wisely  SFG     56
-## 365                  Sal Frelick  MIL     55
-## 366                 Jose Miranda  MIN     55
-## 367                  Jake Bauers  NYY     55
-## 368                    Bo Naylor  CLE     53
-## 369                  Jonah Bride  OAK     52
-## 370                  Andy Ibanez  DET     52
-## 371                  Corey Julks  HOU     52
-## 372              Enmanuel Valdez  BOS     51
-## 373                    Mike Ford  SEA     51
-## 374                Austin Hedges  PIT     50
-## 375                 Mark Vientos  NYM     49
-## 376              Emmanuel Rivera  ARI     49
-## 377             Elehuris Montero  COL     49
-## 378                    Luke Voit &lt;NA&gt;     49
-## 379                 Austin Wynns  COL     48
-## 380                  Henry Ramos  CIN     48
-## 381                  Ryan OHearn  BAL     48
-## 382                Austin Barnes  LAD     47
-## 383                Josh Palacios  PIT     47
-## 384                 Sam Hilliard  ATL     47
-## 385                Stone Garrett  WSN     47
-## 386                  Brad Miller  TEX     47
-## 387               Donovan Solano  MIN     46
-## 388                Colton Cowser  BAL     45
-## 389                  Riley Adams  WSN     45
-## 390                   Matt Duffy  KCR     44
-## 391                 Miguel Amaya  CHC     44
-## 392               Patrick Bailey  SFG     43
-## 393                  Jordan Diaz  OAK     43
-## 394               Jonathan Davis  MIA     43
-## 395                  Nick Gordon  MIN     43
-## 396                 Cavan Biggio  TOR     42
-## 397                    Joey Bart  SFG     41
-## 398                   Luke Maile  CIN     39
-## 399                Rob Refsnyder  BOS     38
-## 400               Parker Meadows  DET     37
-## 401                   Max Stassi  LAA     36
-## 402              Jordan Westburg  BAL     36
-## 403                Mike Tauchman  CHC     36
-## 404              Tucker Barnhart  CHC     36
-## 405                  Curt Casali  CIN     36
-## 406                 Carlos Perez  OAK     35
-## 407                 Sam Haggerty  SEA     35
-## 408                Jesus Aguilar &lt;NA&gt;     35
-## 409               Carter Kieboom  WSN     34
-## 410                 Kyle Stowers  BAL     34
-## 411                 Chad Wallach  LAA     32
-## 412                     Jake Alu  WSN     32
-## 413                  Aaron Hicks  BAL     32
-## 414               Garrett Stubbs  PHI     32
-## 415              Taylor Trammell  SEA     32
-## 416                  Darick Hall  PHI     32
-## 417                  Tyler Nevin  DET     32
-## 418              Tommy La Stella &lt;NA&gt;     32
-## 419                   Manny Pina  OAK     31
-## 420                Nick Madrigal  CHC     31
-## 421                 Abraham Toro  MIL     31
-## 422             Dominic Fletcher  ARI     31
-## 423                Alfonso Rivas  SDP     31
-## 424               Vaughn Grissom  ATL     30
-## 425                  Pablo Reyes  BOS     30
-## 426                    Jake Cave  PHI     30
-## 427              Garrett Hampson  MIA     30
-## 428                   Zack Short  DET     29
-## 429                Tyler Freeman  CLE     29
-## 430                 Matt Wallner  MIN     29
-## 431                  Jose Azocar  SDP     29
-## 432                  Seby Zavala  CHW     28
-## 433                 Nathan Lukes  TOR     28
-## 434                 Cal Mitchell  PIT     28
-## 435                Freddy Fermin  KCR     27
-## 436                 Samad Taylor  KCR     27
-## 437               Edouard Julien  MIN     27
-## 438                 Terrin Vavra  BAL     27
-## 439                  Will Benson  CIN     27
-## 440               Cristian Pache  PHI     27
-## 441                  Jason Delay  PIT     26
-## 442                 Mark Mathias  PIT     26
-## 443                  Miguel Sano &lt;NA&gt;     26
-## 444                Blake Perkins  MIL     26
-## 445             Travis Swaggerty  PIT     25
-## 446               Luis Campusano  SDP     24
-## 447                   Juan Yepez  STL     24
-## 448               Michael Chavis  WSN     24
-## 449                 Kevin Pillar  ATL     24
-## 450                Jon Singleton  MIL     24
-## 451                 Jose Barrero  CIN     24
-## 452                 Jonny DeLuca  LAD     23
-## 453               Bubba Thompson  TEX     23
-## 454                Oswald Peraza  NYY     22
-## 455 Christian Encarnacion Strand  CIN     22
-## 456                George Valera  CLE     22
-## 457                 Vidal Brujan  TBR     22
-## 458                Brandon Dixon  SDP     22
-## 459                   Edwin Rios  CHC     22
-## 460                Clint Frazier  CHW     22
-## 461               Brett Sullivan  SDP     21
-## 462          Canaan Smith Njigba  PIT     21
-## 463                   Greg Allen  NYY     20
-## 464                Oscar Mercado  STL     20
-## 465               Jake Marisnick  DET     20
-## 466                 Leury Garcia &lt;NA&gt;     20
-## 467                   David Dahl  SDP     20
-## 468                 David Villar  SFG     19
-## 469                   Joey Ortiz  BAL     19
-## 470            Miles Mastrobuoni  CHC     19
-## 471                Cam Gallagher  CLE     19
-## 472                 Bobby Dalbec  BOS     19
-## 473               Michael Toglia  COL     19
-## 474            Charlie Culberson  ATL     19
-## 475                  Kevin Smith  OAK     18
-## 476                   Drew Ellis  PHI     18
-## 477                  Josh Lester  BAL     18
-## 478               Tyler Heineman  TOR     17
-## 479                Ryan Kreidler  DET     17
-## 480            Andruw Monasterio  MIL     17
-## 481                 Jose Herrera  ARI     17
-## 482                 Ryan McKenna  BAL     17
-## 483                     Jo Adell  LAA     17
-## 484               Dalton Guthrie  PHI     17
-## 485                David Hensley  HOU     17
-## 486                   Nate Eaton  KCR     17
-## 487                  Jacob Amaya  MIA     16
-## 488                 Kyle Garlick  MIN     16
-## 489                   Lenyn Sosa  CHW     16
-## 490                 Conner Capel  OAK     16
-## 491                Mike Brosseau  MIL     16
-## 492                    David Fry  CLE     16
-## 493               Ehire Adrianza  ATL     16
-## 494               Carlos Perez 2  CHW     15
-## 495                     Yu Chang  BOS     15
-## 496                 Adam Haseley  CHW     14
-## 497                  Luken Baker  STL     14
-## 498                  Donny Sands  DET     13
-## 499              Jonathan Aranda  TBR     13
-## 500                    Darin Ruf  MIL     13
-## 501               Grae Kessinger  HOU     13
-## 502                  T J Hopkins  CIN     13
-## 503             Garrett Mitchell  MIL     12
-## 504                Cesar Salazar  HOU     12
-## 505                Cooper Hummel  SEA     12
-## 506                Ernie Clement  TOR     12
-## 507               Xavier Edwards  MIA     12
-## 508                   Livan Soto  LAA     12
-## 509              Braden Shewmake  ATL     12
-## 510                 Brian Serven  COL     11
-## 511                 Logan OHoppe  LAA     11
-## 512                   Zack Gelof  OAK     11
-## 513                 Darren Baker  WSN     11
-## 514              Alcides Escobar &lt;NA&gt;     11
-## 515          Justyn Henry Malloy  DET     10
-## 516               Liover Peguero  PIT     10
-## 517                 Ben Rortvedt  NYY      9
-## 518               David Fletcher  LAA      9
-## 519                Michael Busch  LAD      9
-## 520                 Wilson Ramos &lt;NA&gt;      9
-## 521               Addison Barger  TOR      8
-## 522                Michael Perez  NYM      8
-## 523                   Rene Pinto  TBR      7
-## 524                   Otto Lopez  TOR      7
-## 525               Peyton Burdick  MIA      7
-## 526             Nelson Velazquez  CHC      7
-## 527                  Jeter Downs  WSN      7
-## 528               Brayan Rocchio  CLE      6
-## 529                Danny Mendick  NYM      6
-## 530                Bryce Johnson  SFG      6
-## 531                Franmil Reyes  WSN      6
-## 532                Jose Iglesias  SDP      5
-## 533              Yonny Hernandez  LAD      5
-## 534                Yonathan Daza  COL      5
-## 535                Israel Pineda  WSN      5
-## 536                    Eli White  ATL      5
-## 537                Scott Kingery  PHI      5
-## 538                  Curtis Mead  TBR      4
-## 539            Ronaldo Hernandez  BOS      4
-## 540              Richie Palacios  CLE      4
-## 541               Rafael Marchan  PHI      4
-## 542               Chadwick Tromp  ATL      4
-## 543                   Sandy Leon  TEX      4
-## 544                Jordan Luplow  TOR      3
-## 545                 Austin Allen  MIA      3
-## 546           Gilberto Celestino  MIN      3
-## 547                Buddy Kennedy  ARI      3
-## 548              Jordan Groshans  MIA      3
-## 549                   David Bote  CHC      3
-## 550                 Raimel Tapia  BOS      3
-## 551                  Cole Tucker  COL      3
-## 552               Billy Hamilton  CHW      3
-## 553              Anthony Bemboom  BAL      2
-## 554                 Tres Barrera  STL      2
-## 555              Franchy Cordero  NYY      2
-## 556                    Korey Lee  HOU      2
-## 557                 Payton Henry  MIL      2
-## 558              Abraham Almonte  NYM      2
-## 559                 Tony Wolters  MIN      2
-## 560                Luis Liberato  SDP      2
-## 561                  Roman Quinn  MIL      2
-## 562                Erik Gonzalez  CHW      2
-## 563            Aaron Shackelford  PIT      2
-## 564                Michael Siani  CIN      2
-## 565                     Sam Huff  TEX      1
-## 566                 Eguy Rosario  SDP      1
-## 567                 Rylan Bannon  HOU      1
-## 568                    Jake Lamb  LAA      1
-## 569               Yoshi Tsutsugo  TEX      1
-## 570                Luke Williams  ATL      1
-## 571             Tyler Soderstrom  OAK      1
-## 572             Michael Stefanic  LAA      0
-## 573                Andre Lipcius  DET      0
-## 574                Johan Camargo  KCR      0
-## 575              Hunter Feduccia  LAD      0
-## 576                  Nick Loftin  KCR      0
-## 577                Luis Gonzalez  SFG      0
-## 578                Davis Wendzel  TEX      0
-## 579                 Chris Owings  PIT      0
-## 580                  Chad Pinder &lt;NA&gt;      0
-## 581                 Cade Marlowe  SEA      0
-## 582                   Matt Beaty  SFG      0
-## 583                 Heliot Ramos  SFG      0
-## 584                 CJ Alexander  KCR      0</code></pre>
+<pre><code>##           PlayerName Team  Elig. Pos. Points
+## 1       Jose_Ramirez  CLE          3B    271
+## 2       Alex_Bregman  HOU          3B    242
+## 3      Rafael_Devers  BOS          3B    239
+## 4      Nolan_Arenado  STL          3B    233
+## 5       Austin_Riley  ATL          3B    212
+## 6      Manny_Machado  SDP          3B    208
+## 7      Bobby_Witt_Jr  KCR       SS/3B    200
+## 8         Yandy_Diaz  TBR       3B/1B    191
+## 9      Justin_Turner  BOS       3B/1B    175
+## 10      Matt_Chapman  TOR          3B    173
+## 11     Spencer_Steer  CIN       3B/1B    164
+## 12     Isaac_Paredes  TBR    3B/1B/2B    158
+## 13      Ryan_McMahon  COL       3B/2B    157
+## 14     KeBryan_Hayes  PIT          3B    156
+## 15    Anthony_Rendon  LAA          3B    156
+## 16         Josh_Jung  TEX          3B    155
+## 17  Gunnar_Henderson  BAL       3B/SS    154
+## 18       DJ_LeMahieu  NYY    3B/1B/2B    154
+## 19 Jeimer_Candelario  WSN          3B    152
+## 20         Alec_Bohm  PHI       3B/1B    142
+## 21   Brendan_Donovan  STL 2B/1B/3B/OF    136
+## 22     Brandon_Drury  LAA    3B/1B/2B    136
+## 23         Max_Muncy  LAD       3B/2B    134
+## 24       Royce_Lewis  MIN       SS/3B    132
+## 25      Ha_Seong_Kim  SDP    SS/2B/3B    131
+## 26     Jordan_Walker  STL       3B/OF    131
+## 27    Eugenio_Suarez  SEA          3B    130
+## 28        Brett_Baty  NYM          3B    119
+## 29      Taylor_Walls  TBR    SS/2B/3B    116
+## 30       Jean_Segura  MIA       2B/3B    110
+## 31    Ezequiel_Duran  TEX    3B/SS/OF    103
+## 32         J_D_Davis  SFG          3B    102
+## 33       Jake_Burger  CHW          3B    102
+## 34    Zach_McKinstry  DET    3B/2B/OF     96
+## 35      Willi_Castro  MIN       OF/3B     69
+## 36        Josh_Rojas  ARI       3B/2B     49</code></pre>
 <pre class="r"><code>clean_pitcher_data %&gt;%
   mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %&gt;%
   select(PlayerName, Team, Points) %&gt;%
   arrange(desc(Points))</code></pre>
 <pre><code>##                  PlayerName Team Points
-## 1               Gerrit Cole  NYY    299
-## 2           Spencer Strider  ATL    291
-## 3            Framber Valdez  HOU    285
-## 4             Luis Castillo  SEA    280
-## 5                Aaron Nola  PHI    271
-## 6             Kevin Gausman  TOR    268
-## 7          Shane McClanahan  TBR    268
-## 8             Shohei Ohtani  LAA    266
-## 9          Justin Verlander  NYM    264
-## 10            Corbin Burnes  MIL    262
-## 11             Max Scherzer  NYM    262
-## 12             Zack Wheeler  PHI    261
-## 13          Sandy Alcantara  MIA    261
-## 14             Shane Bieber  CLE    261
-## 15               Logan Webb  SFG    254
-## 16               Zac Gallen  ARI    253
-## 17          Clayton Kershaw  LAD    250
-## 18               Yu Darvish  SDP    248
-## 19           Nathan Eovaldi  TEX    240
-## 20              Dylan Cease  CHW    239
-## 21           Charlie Morton  ATL    236
-## 22             Joe Musgrove  SDP    235
-## 23            Tyler Glasnow  TBR    235
-## 24            Logan Gilbert  SEA    233
-## 25          Cristian Javier  HOU    226
-## 26               Josh Hader  SDP    226
-## 27              Pablo López  MIN    221
-## 28            Hunter Greene  CIN    220
-## 29                 Joe Ryan  MIN    220
-## 30           Emmanuel Clase  CLE    220
-## 31             Hunter Brown  HOU    219
-## 32              Kodai Senga  NYM    218
-## 33            Lucas Giolito  CHW    213
-## 34             Camilo Doval  SFG    213
-## 35             Jacob deGrom  TEX    212
-## 36            Merrill Kelly  ARI    212
-## 37         Triston McKenzie  CLE    211
-## 38           Félix Bautista  BAL    211
-## 39             George Kirby  SEA    208
-## 40               Lance Lynn  CHW    207
-## 41        Jordan Montgomery  STL    206
-## 42            Chris Bassitt  TOR    206
-## 43             David Bednar  PIT    206
-## 44             Ryan Helsley  STL    206
-## 45             Ryan Pressly  HOU    204
-## 46              Blake Snell  SDP    203
-## 47              Jhoan Duran  MIN    203
-## 48                Alex Cobb  SFG    202
-## 49              Alexis Díaz  CIN    202
-## 50               Zach Eflin  TBR    200
-## 51           Devin Williams  MIL    199
-## 52              Alek Manoah  TOR    198
-## 53          Raisel Iglesias  ATL    198
-## 54               Sonny Gray  MIN    197
-## 55             Mitch Keller  PIT    197
-## 56            Jordan Romano  TOR    197
-## 57            Liam Hendriks  CHW    196
-## 58             José Berríos  TOR    195
-## 59                 Jon Gray  TEX    194
-## 60            Miles Mikolas  STL    193
-## 61            Jesús Luzardo  MIA    192
-## 62            Luis Severino  NYY    192
-## 63            Kenley Jansen  BOS    192
-## 64           Marcus Stroman  CHC    190
-## 65           Freddy Peralta  MIL    189
-## 66            Evan Phillips  LAD    187
-## 67              Julio Urías  LAD    186
-## 68             Brady Singer  KCR    183
-## 69             James Paxton  BOS    180
-## 70            Nestor Cortes  NYY    180
-## 71              Paul Sewald  SEA    180
-## 72               Alex Lange  DET    178
-## 73           Carlos Estévez  LAA    178
-## 74            Andrew Heaney  TEX    177
-## 75             Matthew Boyd  DET    177
-## 76             Scott Barlow  KCR    172
-## 77            Jack Flaherty  STL    170
-## 78             Aaron Civale  CLE    169
-## 79               Chris Sale  BOS    168
-## 80           Michael Kopech  CHW    168
-## 81         Garrett Whitlock  BOS    167
-## 82             Reid Detmers  LAA    166
-## 83            Tony Gonsolin  LAD    166
-## 84                 A.J. Puk  MIA    166
-## 85          David Robertson  NYM    164
-## 86            Ranger Suárez  PHI    163
-## 87         Patrick Sandoval  LAA    163
-## 88               Will Smith  TEX    162
-## 89             Carlos Rodón  NYY    161
-## 90         Michael Lorenzen  DET    161
-## 91              Bryce Elder  ATL    160
-## 92            Craig Kimbrel  PHI    157
-## 93            Michael Wacha  SDP    156
-## 94           Domingo Germán  NYY    156
-## 95            Kyle Finnegan  WSN    156
-## 96             Tanner Houck  BOS    154
-## 97       Anthony DeSclafani  SFG    154
-## 98          Mark Leiter Jr.  CHC    154
-## 99           MacKenzie Gore  WSN    153
-## 100         Jameson Taillon  CHC    153
-## 101            Martín Pérez  TEX    153
-## 102          Edward Cabrera  MIA    153
-## 103             Josiah Gray  WSN    153
-## 104             Clay Holmes  NYY    153
-## 105        Brandon Woodruff  MIL    152
-## 106               Alex Wood  SFG    152
-## 107             Bailey Ober  MIN    151
-## 108             Kyle Gibson  BAL    151
-## 109                JP Sears  OAK    149
-## 110             Dean Kremer  BAL    147
-## 111           Justin Steele  CHC    146
-## 112            Bryce Miller  SEA    146
-## 113              Jason Adam  TBR    146
-## 114          Pete Fairbanks  TBR    146
-## 115          Tyler Anderson  LAA    143
-## 116         Adam Wainwright  STL    143
-## 117           Miguel Castro  ARI    143
-## 118            Kyle Bradish  BAL    142
-## 119           Nick Martinez  SDP    142
-## 120            Michael King  NYY    142
-## 121             Tyler Wells  BAL    141
-## 122            Brayan Bello  BOS    140
-## 123             Sean Manaea  SFG    139
-## 124            Zack Greinke  KCR    138
-## 125         Aroldis Chapman  KCR    137
-## 126           Hunter Harvey  WSN    136
-## 127           Andrew Abbott  CIN    135
-## 128             Logan Allen  CLE    135
-## 129          Taijuan Walker  PHI    135
-## 130           Louie Varland  MIN    135
-## 131           Yusei Kikuchi  TOR    135
-## 132              Drew Smyly  CHC    134
-## 133           Andrew Chafin  ARI    133
-## 134             Taj Bradley  TBR    132
-## 135          Patrick Corbin  WSN    131
-## 136          Pierce Johnson  COL    131
-## 137           José Alvarado  PHI    131
-## 138         Carlos Carrasco  NYM    130
-## 139       Eduardo Rodriguez  DET    129
-## 140          Mike Clevinger  CHW    129
-## 141               Max Fried  ATL    126
-## 142             A.J. Minter  ATL    126
-## 143        Brusdar Graterol  LAD    126
-## 144             Bryan Abreu  HOU    126
-## 145      Matthew Liberatore  STL    125
-## 146               Rich Hill  PIT    125
-## 147         Griffin Canning  LAA    124
-## 148          Adbert Alzolay  CHC    124
-## 149           Adam Ottavino  NYM    124
-## 150              Trevor May  OAK    124
-## 151            Bobby Miller  LAD    122
-## 152            Tarik Skubal  DET    122
-## 153            Johan Oviedo  PIT    122
-## 154              Matt Brash  SEA    122
-## 155               Seth Lugo  SDP    121
-## 156             Luke Weaver  CIN    121
-## 157             Kenta Maeda  MIN    120
-## 158           Ken Waldichuk  OAK    120
-## 159         Graham Ashcraft  CIN    119
-## 160            Tanner Bibee  CLE    119
-## 161          Kyle Hendricks  CHC    119
-## 162            Andrés Muñoz  SEA    119
-## 163             J.P. France  HOU    118
-## 164       Giovanny Gallegos  STL    117
-## 165         James Karinchak  CLE    117
-## 166              Eury Pérez  MIA    116
-## 167          Paul Blackburn  OAK    116
-## 168        Roansy Contreras  PIT    115
-## 169           Kyle Harrison  SFG    115
-## 170          Caleb Ferguson  LAD    115
-## 171          Marco Gonzales  SEA    115
-## 172              Drew Smith  NYM    115
-## 173          Ron Marinaccio  NYY    115
-## 174            Daniel Lynch  KCR    114
-## 175               Joe Kelly  CHW    114
-## 176          David Peterson  NYM    113
-## 177           Nick Anderson  ATL    113
-## 178            Jordan Lyles  KCR    113
-## 179           Brock Stewart  MIN    113
-## 180            Hector Neris  HOU    112
-## 181             Bryan Baker  BAL    112
-## 182             Ryne Nelson  ARI    111
-## 183           Adrian Houser  MIL    111
-## 184             Steven Matz  STL    111
-## 185           Cal Quantrill  CLE    111
-## 186              Eric Lauer  MIL    111
-## 187        Kendall Graveman  CHW    111
-## 188             Brock Burke  TEX    111
-## 189         Trevor Williams  WSN    110
-## 190            Chris Martin  BOS    110
-## 191          Clarke Schmidt  NYY    110
-## 192             Tommy Henry  ARI    110
-## 193           Drew Rucinski  OAK    110
-## 194            John Brebbia  SFG    109
-## 195            Tanner Scott  MIA    109
-## 196              Alex Faedo  DET    108
-## 197            Erik Swanson  TOR    108
-## 198         Braxton Garrett  MIA    107
-## 199    Seranthony Domínguez  PHI    107
-## 200           Scott McGough  ARI    107
-## 201            José Urquidy  HOU    106
-## 202            Ronel Blanco  HOU    106
-## 203        AJ Smith-Shawver  ATL    106
-## 204           Trevor Rogers  MIA    105
-## 205            Corey Kluber  BOS    105
-## 206             Matt Strahm  PHI    105
-## 207          Trevor Stephan  CLE    105
-## 208           Wandy Peralta  NYY    105
-## 209        Noah Syndergaard  LAD    104
-## 210             Jason Foley  DET    104
-## 211              Cole Irvin  BAL    104
-## 212          Reynaldo López  CHW    103
-## 213               Ben Joyce  LAA    103
-## 214             Jalen Beeks  TBR    103
-## 215             Nick Lodolo  CIN    102
-## 216           Luis L. Ortiz  PIT    102
-## 217             Zach Davies  ARI    102
-## 218            Tylor Megill  NYM    102
-## 219     Julian Merryweather  CHC    102
-## 220              Lucas Sims  CIN    102
-## 221           Taylor Rogers  SFG    102
-## 222          Michael Fulmer  CHC    102
-## 223        Peter Strzelecki  MIL    102
-## 224           Steven Wilson  SDP    101
-## 225          Caleb Thielbar  MIN    101
-## 226             Dylan Floro  MIA    101
-## 227            Josh Fleming  TBR    101
-## 228             Trevor Gott  SEA    101
-## 229       Grayson Rodriguez  BAL    100
-## 230         Hayden Wesneski  CHC    100
-## 231        Huascar Brazoban  MIA    100
-## 232            Brooks Raley  NYM    100
-## 233            Austin Adams  ARI    100
-## 234       Robert Stephenson  TBR    100
-## 235             Ryne Stanek  HOU    100
-## 236         Kutter Crawford  BOS     99
-## 237             Hoby Milner  MIL     99
-## 238             Jorge López  MIN     99
-## 239           José Quintana  NYM     98
-## 240              Josh Sborz  TEX     98
-## 241            José Leclerc  TEX     98
-## 242            Jesse Chavez  ATL     98
-## 243              Jacob Webb  LAA     98
-## 244             Colin Poche  TBR     98
-## 245         Colin Holderman  PIT     97
-## 246            Yennier Cano  BAL     97
-## 247             Sam Hentges  CLE     97
-## 248            Steven Okert  MIA     97
-## 249            Nick Pivetta  BOS     96
-## 250            Dauri Moreta  PIT     96
-## 251            Gregory Soto  PHI     96
-## 252          Brandon Hughes  CHC     96
-## 253           Kyle Freeland  COL     95
-## 254              Dustin May  LAD     95
-## 255               Will Vest  DET     95
-## 256          Grant Anderson  TEX     95
-## 257            Aaron Bummer  CHW     94
-## 258           Taylor Clarke  KCR     94
-## 259              Phil Maton  HOU     94
-## 260           Austin Gomber  COL     93
-## 261               Tim Mayza  TOR     93
-## 262          Ross Stripling  SFG     93
-## 263            Nate Pearson  TOR     93
-## 264             Kevin Kelly  TBR     93
-## 265                Sam Moll  OAK     93
-## 266             Daniel Bard  COL     93
-## 267         Justin Lawrence  COL     92
-## 268          Chris Devenski  LAA     92
-## 269          John Schreiber  BOS     92
-## 270            Tom Cosgrove  SDP     92
-## 271            Jordan Hicks  STL     92
-## 272            Tyler Rogers  SFG     92
-## 273            Jaime Barría  LAA     91
-## 274            Drey Jameson  ARI     91
-## 275             Joe Jiménez  ATL     91
-## 276            Tommy Kahnle  NYY     91
-## 277           Josh Staumont  KCR     91
-## 278             Justin Topa  SEA     91
-## 279         Trevor Richards  TOR     91
-## 280             Gabe Speier  SEA     90
-## 281              Alex Vesia  LAD     90
-## 282          Michael Soroka  ATL     89
-## 283        Carlos Hernández  KCR     89
-## 284         Scott Alexander  SFG     89
-## 285          Danny Coulombe  BAL     89
-## 286            Jeff Brigham  NYM     89
-## 287         Vince Velasquez  PIT     88
-## 288            Dane Dunning  TEX     88
-## 289          Chris Stratton  STL     88
-## 290        Carl Edwards Jr.  WSN     88
-## 291           Collin McHugh  ATL     88
-## 292            Mike Baumann  BAL     88
-## 293             Reese Olson  DET     87
-## 294              Ben Lively  CIN     87
-## 295          Jose Hernandez  PIT     87
-## 296            Drew Carlton  SDP     87
-## 297              Eli Morgan  CLE     87
-## 298              Wade Miley  MIL     86
-## 299           Bailey Falter  PHI     86
-## 300            Johnny Cueto  MIA     86
-## 301           Yency Almonte  LAD     86
-## 302        Richard Lovelady  OAK     86
-## 303           Drew VerHagen  STL     86
-## 304             Adam Cimber  TOR     86
-## 305            Joel Payamps  MIL     85
-## 306             Griffin Jax  MIN     85
-## 307           Elvis Peguero  MIL     85
-## 308          Drew Rasmussen  TBR     84
-## 309          Dinelson Lamet  COL     84
-## 310             Cole Ragans  TEX     84
-## 311          Connor Brogdon  PHI     84
-## 312         Garrett Crochet  CHW     84
-## 313         Génesis Cabrera  STL     84
-## 314               Bryan Woo  SEA     83
-## 315        Jeremiah Estrada  CHC     83
-## 316            Chris Flexen  SEA     83
-## 317                Tim Hill  SDP     83
-## 318          Rafael Montero  HOU     82
-## 319            Jeff Hoffman  PHI     82
-## 320             Yimi García  TOR     82
-## 321            Jovani Moran  MIN     82
-## 322             Luis Medina  OAK     82
-## 323             Lucas Erceg  OAK     82
-## 324     Lance McCullers Jr.  HOU     81
-## 325          Brandon Pfaadt  ARI     81
-## 326                 DL Hall  BAL     81
-## 327               Jake Bird  COL     81
-## 328          Andrew Vasquez  PHI     81
-## 329            Emilio Pagán  MIN     81
-## 330              Aaron Loup  LAA     81
-## 331           Jimmy Cordero  NYY     81
-## 332             Kyle Nelson  ARI     81
-## 333          Tayler Saucedo  SEA     81
-## 334         Josh Winckowski  BOS     81
-## 335            José Cisnero  DET     81
-## 336           Shelby Miller  LAD     81
-## 337              Ian Gibaut  CIN     80
-## 338              Alex Young  CIN     80
-## 339         Shawn Armstrong  TBR     80
-## 340           Austin Pruitt  OAK     80
-## 341              Mike Minor &lt;NA&gt;     79
-## 342             José Suarez  LAA     79
-## 343               Dylan Lee  ATL     79
-## 344      Brandon Williamson  CIN     79
-## 345       Madison Bumgarner &lt;NA&gt;     79
-## 346            Kevin Ginkel  ARI     79
-## 347           Yohan Ramirez  PIT     79
-## 348             Kyle Muller  OAK     78
-## 349             Luis García  SDP     78
-## 350            Albert Abreu  NYY     78
-## 351         Tucker Davidson  LAA     77
-## 352     Enyel De Los Santos  CLE     77
-## 353            Nick Sandlin  CLE     77
-## 354          Yonny Chirinos  TBR     76
-## 355          Brandon Bielak  HOU     76
-## 356             Buck Farmer  CIN     76
-## 357       Shintaro Fujinami  OAK     76
-## 358           Angel Perdomo  PIT     76
-## 359            Andrew Nardi  MIA     76
-## 360           Michael Grove  LAD     75
-## 361             Jakob Junis  SFG     75
-## 362          Spencer Howard  TEX     75
-## 363             JT Chargois  MIA     75
-## 364               Matt Bush  MIL     75
-## 365           Chasen Shreve  DET     75
-## 366           Jared Shuster  ATL     74
-## 367         Victor González  LAD     74
-## 368               Jose Cuas  KCR     74
-## 369               Chad Kuhl  WSN     73
-## 370             Ryan Walker  SFG     73
-## 371           Dominic Leone  NYM     73
-## 372             Austin Voth  BAL     72
-## 373            Anthony Bass  TOR     72
-## 374             Kirby Yates  ATL     72
-## 375           Seth Martinez  HOU     72
-## 376               Colin Rea  MIL     71
-## 377           Trevor Megill  MIL     71
-## 378             Kyle Wright  ATL     70
-## 379             Mike Mayers  KCR     70
-## 380 Simeon Woods Richardson  MIN     70
-## 381            Joe Mantiply  ARI     70
-## 382           Phil Bickford  LAD     70
-## 383             Cody Morris  CLE     70
-## 384        Keynan Middleton  CHW     70
-## 385          Erasmo Ramírez  WSN     70
-## 386         Brent Honeywell  SDP     69
-## 387            Bryse Wilson  MIL     69
-## 388               José Ruiz  ARI     69
-## 389           Fernando Cruz  CIN     68
-## 390             Keegan Akin  BAL     68
-## 391           Xzavion Curry  CLE     68
-## 392            Cionel Pérez  BAL     68
-## 393              Jake Irvin  WSN     67
-## 394           Sixto Sánchez  MIA     67
-## 395           Chase Silseth  LAA     67
-## 396            Tyler Holton  DET     67
-## 397            Luke Jackson  SFG     67
-## 398                Sam Long  OAK     67
-## 399         Stephen Nogosek  NYM     67
-## 400             Brad Keller  KCR     66
-## 401        James Kaprielian  OAK     66
-## 402          Mason Thompson  WSN     66
-## 403          Andre Pallante  STL     66
-## 404            Mason Miller  OAK     65
-## 405           Rob Zastryzny  PIT     65
-## 406          Connor Seabold  COL     64
-## 407               Brad Hand  COL     64
-## 408            José De León  MIN     64
-## 409        Parker Mushinski  HOU     64
-## 410            Jake Diekman  TBR     64
-## 411          Brad Boxberger  CHC     64
-## 412             Brent Suter  COL     63
-## 413              Joey Wentz  DET     63
-## 414          Adrian Morejon  SDP     63
-## 415             Mitch White  TOR     63
-## 416             JoJo Romero  STL     63
-## 417            Justin Garza  BOS     63
-## 418              John Means  BAL     61
-## 419            Yunior Marte  PHI     61
-## 420            Zach Jackson  OAK     61
-## 421          Andrés Machado  WSN     61
-## 422              Matt Moore  LAA     60
-## 423          Ryan Yarbrough  KCR     59
-## 424               Ben Brown  CHC     59
-## 425        Bruce Zimmermann  BAL     59
-## 426            Paolo Espino  WSN     58
-## 427             Cory Abbott  WSN     58
-## 428            Tommy Hunter  NYM     57
-## 429           Greg Weissert  NYY     57
-## 430           Peter Lambert  COL     56
-## 431         Andrew Bellatti  PHI     56
-## 432          Gregory Santos  CHW     56
-## 433               John King  TEX     56
-## 434           Thaddeus Ward  WSN     56
-## 435         Keegan Thompson  CHC     55
-## 436           Bennett Sousa  MIL     55
-## 437           Zack Thompson  STL     55
-## 438      Cristopher Sánchez  PHI     54
-## 439         Adrián Martínez  OAK     54
-## 440          Michael Rucker  CHC     54
-## 441             Ryan Pepiot  LAD     53
-## 442           Hunter Gaddis  CLE     53
-## 443              Matt Festa  SEA     53
-## 444      Brennan Bernardino  BOS     52
-## 445              Chad Smith  OAK     52
-## 446        Spencer Turnbull  DET     51
-## 447           Jake Woodford  STL     51
-## 448           Daniel Hudson  LAD     51
-## 449              Nick Vespi  BAL     51
-## 450         Jesse Scholtens  CHW     50
-## 451            Javier Assad  CHC     50
-## 452             Ryan Tepera &lt;NA&gt;     50
-## 453          Michael Tonkin  ATL     50
-## 454         Cooper Criswell  TBR     49
-## 455               Kaleb Ort  BOS     49
-## 456           Nick Wittgren  KCR     49
-## 457           Mason Englert  DET     49
-## 458          Andrew Painter  PHI     48
-## 459            Amir Garrett  KCR     48
-## 460            Jake Cousins  MIL     48
-## 461           Jackson Kowar  KCR     48
-## 462           Roddery Muñoz  ATL     48
-## 463        Jonathan Heasley  KCR     47
-## 464           Joey Lucchesi  NYM     47
-## 465            Hogan Harris  OAK     47
-## 466           Julio Teheran  MIL     47
-## 467             Tommy Nance  MIA     47
-## 468         Joely Rodríguez  BOS     47
-## 469            Andrew Wantz  LAA     47
-## 470           Jimmy Lambert  CHW     47
-## 471            Matt Manning  DET     46
-## 472          Dallas Keuchel &lt;NA&gt;     46
-## 473          Chase Anderson  COL     46
-## 474     Yerry De Los Santos  PIT     46
-## 475        Darren McCaughan  SEA     46
-## 476            Nick Ramirez  NYY     46
-## 477             Cole Waites  SFG     46
-## 478           Vinny Nittoli  NYM     46
-## 479         Tyler Alexander  DET     46
-## 480            Kevin Herget  CIN     45
-## 481            Jimmy Herget  LAA     45
-## 482           Michael Kelly  CLE     45
-## 483            John Curtiss  NYM     45
-## 484          Michael Pineda &lt;NA&gt;     44
-## 485          Brent Headrick  MIN     44
-## 486               Matt Gage  HOU     44
-## 487             Penn Murfee  SEA     44
-## 488        Guillermo Zuñiga  STL     44
-## 489             Shawn Dubin  HOU     43
-## 490            Zack Britton &lt;NA&gt;     42
-## 491            Víctor Arano  WSN     42
-## 492              Luis Frías  ARI     42
-## 493              Cole Sands  MIN     42
-## 494              Tim Herrin  CLE     42
-## 495            Tayler Scott  LAD     42
-## 496             Danny Young  ATL     42
-## 497           Ryan Thompson  TBR     42
-## 498                Zach Pop  TOR     42
-## 499           Alan Busenitz  CIN     42
-## 500          Calvin Faucher  TBR     42
-## 501         Eduardo Salazar  CIN     42
-## 502          George Soriano  MIA     42
-## 503           Ryan Weathers  SDP     41
-## 504            Ian Hamilton  NYY     41
-## 505              Matt Krook  NYY     41
-## 506             Matt Barnes  MIA     41
-## 507      Jonathan Hernández  TEX     41
-## 508           Chase De Jong  PIT     41
-## 509               Joan Adon  WSN     40
-## 510          Nabil Crismatt  SDP     40
-## 511            Taylor Hearn  TEX     40
-## 512          Diego Castillo  SEA     40
-## 513            Tyson Miller  MIL     40
-## 514           Garrett Acton  OAK     40
-## 515            Garrett Hill  DET     40
-## 516           Trevor Kelley  TBR     40
-## 517             Zach Plesac  CLE     39
-## 518            Kolby Allard  ATL     39
-## 519             Josh Winder  MIN     39
-## 520             Dillon Tate  BAL     39
-## 521            Tristan Beck  SFG     39
-## 522           Mychal Givens  BAL     39
-## 523            Hobie Harris  WSN     39
-## 524           Cody Bradford  TEX     38
-## 525            Josh Simpson  MIA     38
-## 526              Kyle Crick &lt;NA&gt;     38
-## 527          Frankie Montas  NYY     37
-## 528             Dylan Covey  PHI     37
-## 529              Noah Davis  COL     37
-## 530              Sean Burke  CHW     37
-## 531                Ray Kerr  SDP     37
-## 532            Zack Littell  TBR     37
-## 533             Jhony Brito  NYY     36
-## 534             Josh Taylor  KCR     36
-## 535          Tony Santillan  CIN     36
-## 536            José Soriano  LAA     36
-## 537          Trey Wingenter  DET     36
-## 538           Dylan Coleman  KCR     36
-## 539             Miguel Díaz  DET     36
-## 540              Codi Heuer  CHC     36
-## 541            Corey Knebel &lt;NA&gt;     35
-## 542              Nick Burdi  CHC     35
-## 543             Ethan Small  MIL     35
-## 544          Sean Doolittle  WSN     35
-## 545            Chris Murphy  BOS     35
-## 546             Sean Hjelle  SFG     34
-## 547              Zack Weiss  LAA     34
-## 548              Alex Reyes  LAD     34
-## 549           Domingo Tapia  SDP     34
-## 550              Joe Barlow  TEX     34
-## 551            Caleb Kilian  CHC     33
-## 552            Max Castillo  KCR     33
-## 553      Peyton Battenfield  CLE     33
-## 554               Derek Law  CIN     33
-## 555          Richard Bleier  BOS     33
-## 556          Casey Legumina  CIN     33
-## 557              Nick Mears  COL     33
-## 558           Sammy Peralta  CHW     33
-## 559              Jay Groome  SDP     32
-## 560           Luis F. Ortiz  PHI     32
-## 561             Jay Jackson  TOR     32
-## 562             Josh Walker  NYM     32
-## 563             Cody Bolton  PIT     32
-## 564             Gavin Stone  LAD     31
-## 565           Jarlín García  PIT     31
-## 566           Riley O&#39;Brien  SEA     31
-## 567            Thomas Hatch  TOR     31
-## 568        Nicholas Padilla  CHW     31
-## 569       Anthony Misiewicz  ARI     30
-## 570            Tanner Banks  CHW     30
-## 571           Matt Carasiti  COL     30
-## 572           Andrew Suárez  STL     30
-## 573         Zach Muckenhirn  NYM     30
-## 574             Danny Duffy  TEX     29
-## 575            Jordan Weems  WSN     29
-## 576             Cole Sulser  ARI     29
-## 577             Edwin Uceta  NYM     29
-## 578             James Naile  STL     29
-## 579              Bryan Shaw  CHW     29
-## 580          Quinn Priester  PIT     28
-## 581            Tejay Antone  CIN     28
-## 582       Jonathan Loáisiga  NYY     28
-## 583           Robert Suarez  SDP     28
-## 584         Yerry Rodríguez  TEX     28
-## 585           José Castillo  SDP     28
-## 586            Austin Davis  HOU     28
-## 587           Justin Bruihl  LAD     28
-## 588           Braden Bristo  DET     28
-## 589            Ryan Feltner  COL     27
-## 590      Michael Plassmeyer  PHI     27
-## 591              Glenn Otto  TEX     27
-## 592             Joel Kuhnel  CIN     27
-## 593        Prelander Berroa  SEA     27
-## 594              Bryan Mata  BOS     27
-## 595        Dereck Rodríguez  ATL     27
-## 596               Juan Then  SEA     27
-## 597             Sam Bachman  LAA     27
-## 598       Antonio Senzatela  COL     26
-## 599        Andrew Kittredge  TBR     26
-## 600        Trevor Rosenthal  DET     26
-## 601               Wil Crowe  PIT     26
-## 602           Caleb Baragar  CLE     26
-## 603              Dylan Dodd  ATL     25
-## 604            Beau Brieske  DET     25
-## 605           Dakota Hudson  STL     25
-## 606                Drew Rom  BAL     25
-## 607          J.B. Bukauskas  MIL     25
-## 608             Blair Calvo  COL     25
-## 609              Adam Oller  OAK     25
-## 610            Blake Taylor  HOU     25
-## 611            Erich Uelmen  PHI     25
-## 612            Hyun Jin Ryu  TOR     24
-## 613                Zak Kent  TEX     24
-## 614             Levi Stoudt  CIN     24
-## 615             Denyi Reyes  NYM     24
-## 616         Ronny Henriquez  MIN     24
-## 617           Ryan Sherriff  BOS     24
-## 618           Zach Thompson  TOR     24
-## 619             Rico Garcia  OAK     24
-## 620             Luis Patiño  TBR     24
-## 621         Gavin Hollowell  COL     24
-## 622            Wily Peralta  WSN     23
-## 623             Nate Fisher  CHW     23
-## 624            Casey Sadler  SEA     23
-## 625            Ryan Borucki  PIT     23
-## 626           Enoli Paredes  HOU     23
-## 627            Deivi García  NYY     23
-## 628              Riley Pint  COL     23
-## 629            Ryan Rolison  COL     22
-## 630            Osvaldo Bido  PIT     22
-## 631              Luis Cessa  COL     22
-## 632            Bryan Hoeing  MIA     22
-## 633              Chad Green  TOR     22
-## 634           Drew Pomeranz  SDP     22
-## 635        Mauricio Llovera  SFG     22
-## 636              Rowan Wick  CHC     22
-## 637           Victor Vodnik  ATL     22
-## 638           Oliver Ortega  MIN     22
-## 639           Justin Yeager  MIL     22
-## 640              Cade Smith  CLE     22
-## 641          Archie Bradley  MIA     22
-## 642            Jorge Alcala  MIN     22
-## 643         Ricky Tiedemann  TOR     21
-## 644           Thyago Vieira  MIL     21
-## 645          Packy Naughton  STL     21
-## 646          Karl Kauffmann  COL     21
-## 647             Janson Junk  MIL     21
-## 648             Matt Wisler  DET     21
-## 649            Wander Suero  LAD     21
-## 650           Andre Jackson  LAD     21
-## 651           Connor Thomas  STL     20
-## 652          Trent Thornton  TOR     20
-## 653            Ryan Hendrix  ARI     20
-## 654           Andrew Politi  BOS     20
-## 655             Colin Selby  PIT     20
-## 656          Eli Villalobos  PIT     20
-## 657         Logan Gillaspie  BAL     20
-## 658       Elieser Hernández  NYM     19
-## 659             Nick Nelson  PHI     19
-## 660         Chris Rodriguez  LAA     19
-## 661         Kenny Rosenberg  LAA     19
-## 662            Dany Jiménez  OAK     19
-## 663               Zach Neal  OAK     19
-## 664           Carlos Vargas  ARI     19
-## 665           Robert Gasser  MIL     18
-## 666          Taylor Dollard  SEA     18
-## 667           Mark Melancon  ARI     18
-## 668            Jimmy Nelson  LAD     18
-## 669         Justin Martinez  ARI     18
-## 670         Kyle Funkhouser  TEX     18
-## 671        Jonathan Stiever  CHW     18
-## 672             Cam Sanders  CHC     18
-## 673            Seth Elledge  DET     18
-## 674           Slade Cecconi  ARI     17
-## 675            Grant Holmes  ATL     17
-## 676             Alex Colomé  CHW     17
-## 677              Austin Cox  KCR     17
-## 678            Landon Knack  LAD     16
-## 679           Brooks Wilson  ATL     16
-## 680           James Norwood  NYY     16
-## 681         Touki Toussaint  CLE     16
-## 682         Zach McAllister  ARI     16
-## 683           Justin Wilson  MIL     16
-## 684             Anthony Kay  CHC     16
-## 685              Ryan Weber  NYY     16
-## 686         J.P. Feyereisen  LAD     16
-## 687           Collin Snider  KCR     16
-## 688            Tommy Milone  SEA     15
-## 689           Aaron Sanchez  MIN     15
-## 690        Reiver Sanmartin  CIN     15
-## 691        Jordan Balazovic  MIN     15
-## 692          Casey Lawrence  TOR     15
-## 693         Isaiah Campbell  SEA     15
-## 694             Wyatt Mills  BOS     15
-## 695              José Marte  LAA     15
-## 696           Colten Brewer  NYY     15
-## 697           Randy Vásquez  NYY     14
-## 698            Kyle Nicolas  PIT     14
-## 699           Brendan White  DET     14
-## 700             Melvin Adón  SFG     14
-## 701           Sam Delaplane  SFG     13
-## 702            Brett Martin  TEX     13
-## 703            Zach Brzykcy  WSN     13
-## 704            Sean Newcomb  SFG     13
-## 705           Daniel Norris  CLE     13
-## 706            Randy Dobnak  MIN     13
-## 707             Caleb Smith  PIT     13
-## 708                Ty Blach  COL     13
-## 709              José Butto  NYM     12
-## 710                Luis Gil  NYY     12
-## 711           Daniel Duarte  CIN     12
-## 712     Duane Underwood Jr.  PIT     12
-## 713                Jace Fry  DET     12
-## 714        Manuel Rodríguez  CHC     12
-## 715           Daniel Zamora  PIT     12
-## 716       Oddanier Mosqueda  BOS     12
-## 717           Stephen Kolek  SEA     12
-## 718          Devin Smeltzer  MIA     12
-## 719         Spenser Watkins  BAL     12
-## 720             Reiss Knehr  SDP     12
-## 721           Sean Reynolds  MIA     12
-## 722         Stephen Ridings  NYM     11
-## 723             Colby White  TBR     11
-## 724               Jake Latz  TEX     11
-## 725          McKinley Moore  PHI     11
-## 726          Daniel Castano  MIA     11
-## 727           Joey Krehbiel  BAL     11
-## 728         Matt Ruppenthal  HOU     11
-## 729            Darius Vines  ATL     10
-## 730          Aaron McGarity  NYY     10
-## 731            Tyler Kinley  COL     10
-## 732           Dan Altavilla  BOS     10
-## 733            Noah Denoyer  BAL     10
-## 734              José Ureña  WSN     10
-## 735          Brandon Walter  BOS      9
-## 736            César Valdez  LAA      9
-## 737            Chris Clarke  CHC      9
-## 738           Brooks Kriske  KCR      9
-## 739          Patrick Murphy  MIN      9
-## 740        Junior Fernández  TOR      9
-## 741             Sam Coonrod  NYM      9
-## 742             Logan Allen  COL      9
-## 743           Corbin Martin  ARI      9
-## 744             Bailey Horn  CHC      9
-## 745             Moises Lugo  SDP      9
-## 746           Kolton Ingram  LAA      9
-## 747          José Rodríguez  SEA      9
-## 748              Louis Head &lt;NA&gt;      9
-## 749              Jake Walsh  STL      9
-## 750            Evan Reifert  TBR      9
-## 751        Nick Mikolajchak  CLE      9
-## 752           Deolis Guerra  OAK      9
-## 753             Matt Cronin  WSN      9
-## 754       Richard Rodríguez  MIA      9
-## 755            Kent Emanuel  PIT      8
-## 756            Tanner Tully  NYY      8
-## 757             Cole Hamels  SDP      8
-## 758           Griff McGarry  PHI      8
-## 759          Yosver Zulueta  TOR      8
-## 760           Evan McKendry  TBR      8
-## 761           Tyler Gilbert  ARI      8
-## 762         Jason Alexander  MIL      8
-## 763          James McArthur  KCR      8
-## 764             Ryan Loutos  STL      8
-## 765       Jackson Tetreault  WSN      8
-## 766            Joe La Sorsa  TBR      8
-## 767          Drew Hutchison &lt;NA&gt;      8
-## 768           Peter Solomon  ARI      8
-## 769           Robert Dugger  TEX      8
-## 770            Nick Neidert  CHC      8
-## 771            Kodi Whitley  STL      8
-## 772             Justin Dunn  CIN      8
-## 773            Bryan Garcia  HOU      8
-## 774              Alec Mills  CIN      7
-## 775            Lucas Luetge  ATL      7
-## 776         Clayton Andrews  MIL      7
-## 777            Angel Felipe  SDP      7
-## 778             Marc Church  TEX      7
-## 779             Rony García  DET      7
-## 780        Andrew Misiaszek  CLE      7
-## 781            Yacksel Ríos  ATL      7
-## 782           R.J. Dabovich  SFG      7
-## 783            Hagen Danner  TOR      7
-## 784               Noah Song  PHI      7
-## 785             Eric Torres  LAA      7
-## 786           Heath Hembree  DET      7
-## 787        Chi Chi González  MIA      7
-## 788           Reyes Moronta  LAA      7
-## 789           Phillip Diehl  CLE      7
-## 790             Angel Zerpa  KCR      6
-## 791            Frank German  CIN      6
-## 792             Damon Jones  PHI      6
-## 793              Zack Burdi  LAD      6
-## 794       Jonathan Sprinkle  HOU      6
-## 795           Jeff Lindgren  MIA      6
-## 796           Ricky Karcher  CIN      6
-## 797           Edgar Navarro  CHW      6
-## 798       Konnor Pilkington  ARI      5
-## 799         Kody Funderburk  MIN      5
-## 800           Anthony Banda  WSN      5
-## 801            Alex Claudio  MIL      5
-## 802             Pedro Avila  SDP      5
-## 803              Joe Record  HOU      5
-## 804             Michel Baez  SDP      5
-## 805  Fineas Del Bonta-Smith  COL      5
-## 806             Lane Ramsey  CHW      5
-## 807           Gerardo Reyes  LAA      4
-## 808              Ben Heller  TBR      3
-## 809            Luke Farrell  CHW      2
-## 810            Cody Stashak  MIN      0
-## 811           Drew Strotman  SFG      0
-## 812           Stephen Jones  COL      0</code></pre>
+## 1               Gerrit Cole  NYY    260
+## 2            Framber Valdez  HOU    246
+## 3           Spencer Strider  ATL    243
+## 4                Aaron Nola  PHI    234
+## 5             Luis Castillo  SEA    234
+## 6              Zack Wheeler  PHI    228
+## 7             Kevin Gausman  TOR    228
+## 8             Corbin Burnes  MIL    225
+## 9             Shohei Ohtani  LAA    225
+## 10          Clayton Kershaw  LAD    225
+## 11             Shane Bieber  CLE    223
+## 12             Max Scherzer  NYM    222
+## 13         Justin Verlander  NYM    222
+## 14          Sandy Alcantara  MIA    217
+## 15         Shane McClanahan  TBR    217
+## 16               Zac Gallen  ARI    213
+## 17               Yu Darvish  SDP    213
+## 18               Logan Webb  SFG    212
+## 19              Dylan Cease  CHW    205
+## 20              Pablo López  MIN    201
+## 21              Blake Snell  SDP    200
+## 22           Charlie Morton  ATL    199
+## 23           Nathan Eovaldi  TEX    198
+## 24            Logan Gilbert  SEA    196
+## 25               Josh Hader  SDP    194
+## 26           Félix Bautista  BAL    194
+## 27             Joe Musgrove  SDP    192
+## 28           Emmanuel Clase  CLE    191
+## 29                 Joe Ryan  MIN    186
+## 30              Kodai Senga  NYM    185
+## 31             George Kirby  SEA    184
+## 32            Tyler Glasnow  TBR    184
+## 33             Camilo Doval  SFG    183
+## 34          Cristian Javier  HOU    182
+## 35               Lance Lynn  CHW    181
+## 36            Merrill Kelly  ARI    180
+## 37            Lucas Giolito  CHW    178
+## 38             David Bednar  PIT    176
+## 39             Carlos Rodón  NYY    175
+## 40              Alexis Díaz  CIN    175
+## 41        Jordan Montgomery  STL    174
+## 42            Hunter Greene  CIN    174
+## 43          Raisel Iglesias  ATL    174
+## 44               Zach Eflin  TBR    172
+## 45             Hunter Brown  HOU    171
+## 46              Julio Urías  LAD    171
+## 47              Jhoan Duran  MIN    171
+## 48               Sonny Gray  MIN    170
+## 49            Chris Bassitt  TOR    170
+## 50            Jordan Romano  TOR    170
+## 51             James Paxton  BOS    169
+## 52             Ryan Pressly  HOU    168
+## 53           Devin Williams  MIL    168
+## 54           Marcus Stroman  CHC    167
+## 55         Garrett Whitlock  BOS    167
+## 56             Mitch Keller  PIT    165
+## 57            Jesús Luzardo  MIA    165
+## 58             José Berríos  TOR    164
+## 59           Freddy Peralta  MIL    163
+## 60            Miles Mikolas  STL    163
+## 61                 Jon Gray  TEX    162
+## 62              Paul Sewald  SEA    160
+## 63            Kenley Jansen  BOS    157
+## 64             Matthew Boyd  DET    154
+## 65            Luis Severino  NYY    154
+## 66             Brady Singer  KCR    153
+## 67           Carlos Estévez  LAA    153
+## 68               Alex Lange  DET    152
+## 69            Andrew Heaney  TEX    150
+## 70          David Robertson  NYM    150
+## 71            Scott McGough  ARI    150
+## 72            Ranger Suárez  PHI    149
+## 73           Pete Fairbanks  TBR    149
+## 74            Craig Kimbrel  PHI    148
+## 75             Scott Barlow  KCR    147
+## 76             Reid Detmers  LAA    146
+## 77            Jack Flaherty  STL    146
+## 78             Aaron Civale  CLE    144
+## 79           Michael Kopech  CHW    144
+## 80                 A.J. Puk  MIA    144
+## 81            Tony Gonsolin  LAD    143
+## 82            Evan Phillips  LAD    143
+## 83         Patrick Sandoval  LAA    142
+## 84          Braxton Garrett  MIA    142
+## 85             Andrés Muñoz  SEA    142
+## 86            Michael Wacha  SDP    141
+## 87          Mark Leiter Jr.  CHC    139
+## 88                Alex Wood  SFG    138
+## 89               Will Smith  TEX    138
+## 90            Nestor Cortes  NYY    137
+## 91         Michael Lorenzen  DET    137
+## 92            Kyle Finnegan  WSN    137
+## 93             Brayan Bello  BOS    136
+## 94              Kyle Gibson  BAL    136
+## 95              Bryce Elder  ATL    134
+## 96         Brandon Woodruff  MIL    133
+## 97       Anthony DeSclafani  SFG    133
+## 98             Bryce Miller  SEA    132
+## 99              Clay Holmes  NYY    132
+## 100               Alex Cobb  SFG    131
+## 101            Kyle Bradish  BAL    131
+## 102             Tyler Wells  BAL    131
+## 103          Tyler Anderson  LAA    130
+## 104             Josiah Gray  WSN    130
+## 105          MacKenzie Gore  WSN    129
+## 106          Taijuan Walker  PHI    129
+## 107           Justin Steele  CHC    128
+## 108            Jordan Hicks  STL    128
+## 109            Bobby Miller  LAD    126
+## 110            Martín Pérez  TEX    125
+## 111           Yusei Kikuchi  TOR    125
+## 112             Taj Bradley  TBR    124
+## 113             Bailey Ober  MIN    124
+## 114          Domingo Germán  NYY    124
+## 115         Jameson Taillon  CHC    123
+## 116           Nick Martinez  SDP    123
+## 117               Seth Lugo  SDP    122
+## 118           José Alvarado  PHI    122
+## 119             Dean Kremer  BAL    122
+## 120                JP Sears  OAK    122
+## 121        Kendall Graveman  CHW    122
+## 122              Trevor May  OAK    122
+## 123             Sean Manaea  SFG    121
+## 124             Kenta Maeda  MIN    121
+## 125         Adam Wainwright  STL    121
+## 126         Aroldis Chapman  KCR    120
+## 127              Jason Adam  TBR    119
+## 128       Giovanny Gallegos  STL    118
+## 129          Paul Blackburn  OAK    115
+## 130       Grayson Rodriguez  BAL    114
+## 131           Adam Ottavino  NYM    114
+## 132             Matt Strahm  PHI    113
+## 133           Hunter Harvey  WSN    113
+## 134            Zack Greinke  KCR    112
+## 135         Griffin Canning  LAA    112
+## 136          Adbert Alzolay  CHC    112
+## 137          Patrick Corbin  WSN    111
+## 138              Drew Smyly  CHC    111
+## 139             Bryan Abreu  HOU    111
+## 140             J.P. France  HOU    111
+## 141           Andrew Abbott  CIN    110
+## 142            Michael King  NYY    110
+## 143       Eduardo Rodriguez  DET    109
+## 144              Chris Sale  BOS    109
+## 145            Johan Oviedo  PIT    108
+## 146             A.J. Minter  ATL    108
+## 147            Dane Dunning  TEX    108
+## 148             Alek Manoah  TOR    108
+## 149            José Urquidy  HOU    108
+## 150              Matt Brash  SEA    107
+## 151               Max Fried  ATL    106
+## 152            Tarik Skubal  DET    106
+## 153            Ryan Helsley  STL    106
+## 154               Rich Hill  PIT    105
+## 155         Carlos Carrasco  NYM    104
+## 156            Tommy Kahnle  NYY    104
+## 157          Edward Cabrera  MIA    103
+## 158         Trevor Williams  WSN    102
+## 159           Taylor Rogers  SFG    101
+## 160          Caleb Ferguson  LAD    101
+## 161              Wade Miley  MIL    100
+## 162              Eury Pérez  MIA    100
+## 163             Logan Allen  CLE    100
+## 164           Cal Quantrill  CLE    100
+## 165           Andrew Chafin  ARI    100
+## 166             Tommy Henry  ARI    100
+## 167            Tanner Scott  MIA    100
+## 168           Daniel Hudson  LAD    100
+## 169      Matthew Liberatore  STL     99
+## 170         Justin Lawrence  COL     99
+## 171          Marco Gonzales  SEA     99
+## 172              Cole Irvin  BAL     99
+## 173           Brock Stewart  MIN     99
+## 174           Trevor Rogers  MIA     98
+## 175            Tanner Bibee  CLE     98
+## 176          David Peterson  NYM     98
+## 177             Steven Matz  STL     98
+## 178              Josh Sborz  TEX     97
+## 179          Kyle Hendricks  CHC     97
+## 180        Brusdar Graterol  LAD     97
+## 181               Joe Kelly  CHW     97
+## 182          Yonny Chirinos  TBR     96
+## 183            Jordan Lyles  KCR     96
+## 184             Sam Hentges  CLE     96
+## 185            Erik Swanson  TOR     96
+## 186           Nick Anderson  ATL     96
+## 187         Graham Ashcraft  CIN     95
+## 188          Brandon Pfaadt  ARI     95
+## 189            Chris Martin  BOS     95
+## 190             Zach Davies  ARI     95
+## 191     Julian Merryweather  CHC     94
+## 192              Alex Faedo  DET     94
+## 193             Bryan Baker  BAL     94
+## 194           Liam Hendriks  CHW     94
+## 195        Roansy Contreras  PIT     93
+## 196           Kyle Harrison  SFG     93
+## 197            Nick Pivetta  BOS     93
+## 198              Drew Smith  NYM     92
+## 199             Brock Burke  TEX     92
+## 200          Clarke Schmidt  NYY     91
+## 201           Steven Wilson  SDP     91
+## 202          Trevor Stephan  CLE     91
+## 203            Hector Neris  HOU     91
+## 204       Robert Stephenson  TBR     91
+## 205         Trevor Richards  TOR     91
+## 206          Mike Clevinger  CHW     90
+## 207          Ross Stripling  SFG     90
+## 208            Hogan Harris  OAK     89
+## 209            José Leclerc  TEX     89
+## 210       Shintaro Fujinami  OAK     89
+## 211             Dylan Floro  MIA     88
+## 212             Nick Lodolo  CIN     87
+## 213             Jason Foley  DET     87
+## 214              Lucas Sims  CIN     87
+## 215          Reynaldo López  CHW     87
+## 216            Austin Adams  ARI     87
+## 217             Joe Jiménez  ATL     87
+## 218            José Soriano  LAA     87
+## 219        Peter Strzelecki  MIL     87
+## 220           Wandy Peralta  NYY     87
+## 221         Kutter Crawford  BOS     86
+## 222            Daniel Lynch  KCR     86
+## 223            Aaron Bummer  CHW     86
+## 224           Angel Perdomo  PIT     86
+## 225              Phil Maton  HOU     86
+## 226        AJ Smith-Shawver  ATL     86
+## 227              Dustin May  LAD     85
+## 228           Collin McHugh  ATL     85
+## 229            Ronel Blanco  HOU     85
+## 230            Gregory Soto  PHI     85
+## 231          Ron Marinaccio  NYY     85
+## 232            Tanner Houck  BOS     84
+## 233            Yennier Cano  BAL     84
+## 234               Will Vest  DET     84
+## 235                Sam Moll  OAK     84
+## 236            Luke Jackson  SFG     84
+## 237           Julio Teheran  MIL     84
+## 238          Chris Devenski  LAA     84
+## 239           José Quintana  NYM     83
+## 240            Jaime Barría  LAA     83
+## 241          Gavin Williams  CLE     83
+## 242            Tylor Megill  NYM     83
+## 243            Joel Payamps  MIL     83
+## 244            Steven Okert  MIA     83
+## 245             Gabe Speier  SEA     83
+## 246             Colin Poche  TBR     83
+## 247             Jorge López  MIN     83
+## 248             Ryne Nelson  ARI     82
+## 249               Colin Rea  MIL     82
+## 250     Yerry De Los Santos  PIT     82
+## 251            Andrew Nardi  MIA     82
+## 252            Brooks Raley  NYM     82
+## 253           Kyle Freeland  COL     81
+## 254            Dauri Moreta  PIT     81
+## 255           Miguel Castro  ARI     81
+## 256        James Kaprielian  OAK     81
+## 257             Justin Topa  SEA     81
+## 258           Luis L. Ortiz  PIT     80
+## 259               Tim Mayza  TOR     80
+## 260          Pierce Johnson  COL     80
+## 261          Adrian Morejon  SDP     80
+## 262             Hoby Milner  MIL     80
+## 263             Luke Weaver  CIN     79
+## 264              Mike Minor &lt;NA&gt;     79
+## 265            Emilio Pagán  MIN     79
+## 266          Danny Coulombe  BAL     79
+## 267       Madison Bumgarner &lt;NA&gt;     79
+## 268           Louie Varland  MIN     78
+## 269          Michael Fulmer  CHC     78
+## 270           Yency Almonte  LAD     78
+## 271           Austin Gomber  COL     77
+## 272             Mitch White  TOR     77
+## 273          John Schreiber  BOS     77
+## 274           Taylor Clarke  KCR     77
+## 275            Tyler Rogers  SFG     77
+## 276            Mike Baumann  BAL     77
+## 277              Eli Morgan  CLE     77
+## 278            José Cisnero  DET     77
+## 279         James Karinchak  CLE     77
+## 280            John Brebbia  SFG     76
+## 281              Aaron Loup  LAA     76
+## 282             Cory Abbott  WSN     76
+## 283               Jake Bird  COL     75
+## 284             Luis García  SDP     75
+## 285             Buck Farmer  CIN     75
+## 286             Yimi García  TOR     75
+## 287          Andre Pallante  STL     75
+## 288            Jeff Hoffman  PHI     75
+## 289             Kevin Kelly  TBR     75
+## 290     Enyel De Los Santos  CLE     75
+## 291         Victor González  LAD     75
+## 292        Triston McKenzie  CLE     74
+## 293               Bryan Woo  SEA     74
+## 294         Hayden Wesneski  CHC     74
+## 295            Drey Jameson  ARI     74
+## 296             Daniel Bard  COL     74
+## 297               Chad Kuhl  WSN     74
+## 298             Ryne Stanek  HOU     74
+## 299          Drew Rasmussen  TBR     73
+## 300           Adrian Houser  MIL     73
+## 301            Jovani Moran  MIN     73
+## 302            Nate Pearson  TOR     73
+## 303        Noah Syndergaard  LAD     72
+## 304             Griffin Jax  MIN     72
+## 305           Jimmy Cordero  NYY     72
+## 306          Tayler Saucedo  SEA     72
+## 307             Reese Olson  DET     71
+## 308             Kyle Muller  OAK     71
+## 309            Jesse Chavez  ATL     71
+## 310              Jacob Webb  LAA     71
+## 311        Keynan Middleton  CHW     71
+## 312             Adam Cimber  TOR     71
+## 313          Andrew Vasquez  PHI     70
+## 314          Grant Anderson  TEX     70
+## 315               Jose Cuas  KCR     70
+## 316            Jake Diekman  TBR     70
+## 317          Mason Thompson  WSN     69
+## 318          Chris Stratton  STL     69
+## 319          Rafael Montero  HOU     69
+## 320             Keegan Akin  BAL     69
+## 321                Sam Long  OAK     69
+## 322            Jeff Brigham  NYM     69
+## 323             Lucas Erceg  OAK     69
+## 324          Brad Boxberger  CHC     69
+## 325                Tim Hill  SDP     68
+## 326                 DL Hall  BAL     67
+## 327              Alex Vesia  LAD     67
+## 328            Ryan Brasier  LAD     67
+## 329             Kyle Nelson  ARI     67
+## 330            Chris Flexen  SEA     67
+## 331           Ken Waldichuk  OAK     66
+## 332           Elvis Peguero  MIL     66
+## 333         Josh Winckowski  BOS     66
+## 334            Nick Sandlin  CLE     66
+## 335      Brandon Williamson  CIN     65
+## 336        Carlos Hernández  KCR     65
+## 337              Matt Moore  LAA     65
+## 338           Dominic Leone  NYM     65
+## 339         Génesis Cabrera  STL     65
+## 340             Shawn Dubin  HOU     64
+## 341    Seranthony Domínguez  PHI     64
+## 342            Joe Mantiply  ARI     64
+## 343           Chasen Shreve  DET     64
+## 344            Albert Abreu  NYY     64
+## 345              Jake Irvin  WSN     63
+## 346      Cristopher Sánchez  PHI     63
+## 347          Michael Soroka  ATL     63
+## 348           Trevor Megill  MIL     63
+## 349            Jordan Weems  WSN     63
+## 350           Jake Woodford  STL     63
+## 351          Gregory Santos  CHW     63
+## 352             Kirby Yates  ATL     63
+## 353           Fernando Cruz  CIN     62
+## 354             Ryan Walker  SFG     62
+## 355           Drew VerHagen  STL     62
+## 356               Matt Bush  MIL     62
+## 357           Jared Shuster  ATL     61
+## 358             Brad Keller  KCR     61
+## 359              Joey Wentz  DET     61
+## 360            Tyler Holton  DET     61
+## 361              Ian Gibaut  CIN     61
+## 362             Jakob Junis  SFG     61
+## 363           Seth Martinez  HOU     61
+## 364            Bryse Wilson  MIL     61
+## 365              Alex Young  CIN     60
+## 366          Michael Rucker  CHC     60
+## 367             JT Chargois  MIA     60
+## 368             Kyle Wright  ATL     59
+## 369          Brandon Bielak  HOU     59
+## 370               Dylan Lee  ATL     59
+## 371         Shawn Armstrong  TBR     59
+## 372         Brent Honeywell  SDP     59
+## 373           Thaddeus Ward  WSN     59
+## 374            Mason Miller  OAK     58
+## 375               Brad Hand  COL     58
+## 376          Brent Headrick  MIN     58
+## 377         Tucker Davidson  LAA     58
+## 378            José De León  MIN     58
+## 379            Johnny Cueto  MIA     57
+## 380           Bailey Falter  PHI     57
+## 381              Ben Lively  CIN     57
+## 382               Ben Brown  CHC     57
+## 383             Trevor Gott  SEA     57
+## 384               José Ruiz  ARI     57
+## 385           Grant Hartwig  NYM     57
+## 386            Cionel Pérez  BAL     57
+## 387            Ryan Borucki  PIT     57
+## 388              John Means  BAL     56
+## 389           Drew Rucinski  OAK     56
+## 390            Tom Cosgrove  SDP     56
+## 391          Michael Tonkin  ATL     56
+## 392            Tanner Banks  CHW     56
+## 393               Matt Gage  HOU     56
+## 394             JoJo Romero  STL     56
+## 395              Joe Barlow  TEX     56
+## 396          Ryan Yarbrough  KCR     55
+## 397           Peter Lambert  COL     55
+## 398            Yunior Marte  PHI     55
+## 399            Justin Garza  BOS     55
+## 400            Osvaldo Bido  PIT     54
+## 401          Connor Seabold  COL     53
+## 402             Anthony Kay  CHC     53
+## 403            Yacksel Ríos  OAK     53
+## 404           Emmet Sheehan  LAD     52
+## 405        Huascar Brazoban  MIA     52
+## 406       Carmen Mlodzinski  PIT     52
+## 407         Keegan Thompson  CHC     52
+## 408          Archie Bradley  MIA     52
+## 409           Nick Wittgren  KCR     52
+## 410          Michael Pineda &lt;NA&gt;     51
+## 411             Luis Medina  OAK     51
+## 412             Jalen Beeks  TBR     51
+## 413             Josh Walker  NYM     51
+## 414          Quinn Priester  PIT     50
+## 415            Paolo Espino  WSN     50
+## 416             Cole Ragans  TEX     50
+## 417         Colin Holderman  PIT     50
+## 418             José Suarez  LAA     49
+## 419            Corey Kluber  BOS     49
+## 420           Cody Bradford  TEX     49
+## 421           Sixto Sánchez  MIA     48
+## 422      Brennan Bernardino  BOS     48
+## 423             Brent Suter  COL     47
+## 424           Phil Bickford  LAD     47
+## 425           Xzavion Curry  CLE     47
+## 426            Zack Littell  TBR     47
+## 427              Austin Cox  KCR     47
+## 428          Bowden Francis  TOR     46
+## 429            Nick Ramirez  NYY     46
+## 430               John King  TEX     46
+## 431               Ty Adcock  SEA     46
+## 432         Connor Phillips  CIN     45
+## 433        Spencer Turnbull  DET     45
+## 434          Dinelson Lamet &lt;NA&gt;     45
+## 435              Matt Festa  SEA     45
+## 436             Cody Bolton  PIT     45
+## 437           Joey Lucchesi  NYM     44
+## 438            Kevin Ginkel  ARI     44
+## 439         Scott Alexander  SFG     44
+## 440          Chase Anderson  COL     44
+## 441           Greg Weissert  NYY     44
+## 442           Mason Englert  DET     44
+## 443              Owen White  TEX     43
+## 444        Carl Edwards Jr.  WSN     43
+## 445            Chris Murphy  BOS     43
+## 446             Cody Morris  CLE     43
+## 447        Jeremiah Estrada  CHC     43
+## 448           Austin Pruitt  OAK     43
+## 449              Chad Smith  OAK     43
+## 450           Alan Busenitz  CIN     43
+## 451            Josh Fleming  TBR     42
+## 452         Cooper Criswell  TBR     42
+## 453           Michael Grove  LAD     42
+## 454            Zach Jackson  OAK     42
+## 455              Tim Herrin  CLE     42
+## 456              Nick Vespi  BAL     42
+## 457         Touki Toussaint  CHW     42
+## 458             Dylan Covey  PHI     41
+## 459            Javier Assad  CHC     41
+## 460          Silvino Bracho  CIN     41
+## 461            Drew Carlton  SDP     41
+## 462          Brandon Hughes  CHC     41
+## 463           Bennett Sousa  MIL     41
+## 464      Jonathan Hernández  TEX     41
+## 465               Ben Joyce  LAA     40
+## 466          Connor Brogdon  PHI     40
+## 467          Jose Hernandez  PIT     40
+## 468           Zack Thompson  STL     40
+## 469               Kaleb Ort  BOS     40
+## 470           Ryan Thompson  TBR     40
+## 471            Tyson Miller  MIL     40
+## 472                Zach Pop  TOR     40
+## 473           Jackson Kowar  KCR     40
+## 474         Tyler Alexander  DET     40
+## 475           Daniel Norris  CLE     40
+## 476 Simeon Woods Richardson  MIN     39
+## 477            Kolby Allard  ATL     39
+## 478           Luis F. Ortiz  PHI     39
+## 479          Nick Robertson  LAD     39
+## 480           Vinny Nittoli  NYM     39
+## 481            John Curtiss  NYM     39
+## 482             Sean Hjelle  SFG     38
+## 483           Robert Suarez  SDP     38
+## 484           Daniel Duarte  CIN     38
+## 485         Logan Gillaspie  BAL     38
+## 486         Jesse Scholtens  CHW     37
+## 487         Joely Rodríguez  BOS     37
+## 488         Garrett Crochet  CHW     37
+## 489           Josh Staumont  KCR     37
+## 490        Richard Lovelady  OAK     37
+## 491             Penn Murfee  SEA     37
+## 492            Taylor Hearn  TEX     37
+## 493            Matt Manning  DET     36
+## 494              Eric Lauer  MIL     36
+## 495        Jonathan Heasley  KCR     36
+## 496           Hunter Gaddis  CLE     36
+## 497            Beau Brieske  DET     36
+## 498            Jake Cousins  MIL     36
+## 499           Brendan White  DET     36
+## 500                Ray Kerr  SDP     36
+## 501               Joan Adon  WSN     35
+## 502            Max Castillo  KCR     35
+## 503           Chase Silseth  LAA     35
+## 504            Corey Knebel &lt;NA&gt;     35
+## 505            Ian Hamilton  NYY     35
+## 506              Luis Frías  ARI     35
+## 507             Matt Barnes  MIA     35
+## 508           Mychal Givens  BAL     35
+## 509             Ryan Pepiot  LAD     34
+## 510            Zack Britton &lt;NA&gt;     34
+## 511          Caleb Thielbar  MIN     34
+## 512         Andrew Bellatti  PHI     34
+## 513        Darren McCaughan  SEA     34
+## 514            Joe La Sorsa  WSN     34
+## 515        Parker Mushinski  HOU     34
+## 516           Yohan Ramirez  PIT     34
+## 517          Sean Doolittle  WSN     34
+## 518           Brooks Kriske  KCR     34
+## 519             Sam Bachman  LAA     34
+## 520          Frankie Montas  NYY     33
+## 521          Andrew Painter  PHI     33
+## 522              Glenn Otto  TEX     33
+## 523            Tristan Beck  SFG     33
+## 524           Oliver Ortega  MIN     33
+## 525           Jimmy Lambert  CHW     33
+## 526           Kolton Ingram  LAA     33
+## 527           Trevor Kelley  TBR     33
+## 528             Zach Plesac  CLE     32
+## 529            Bryan Hoeing  MIA     32
+## 530             Danny Young  ATL     32
+## 531            Bryan Hudson  LAD     32
+## 532         Zach Muckenhirn  NYM     32
+## 533              Ben Heller  ATL     32
+## 534             Denyi Reyes  NYM     31
+## 535           Gerardo Reyes  LAA     31
+## 536            Garrett Hill  DET     31
+## 537        Guillermo Zuñiga  STL     31
+## 538              Noah Davis  COL     30
+## 539             Keaton Winn  SFG     30
+## 540             Cole Sulser  ARI     30
+## 541           Michael Kelly  CLE     30
+## 542          Trent Thornton  TOR     30
+## 543             Dillon Tate  BAL     30
+## 544             Josh Winder  MIN     30
+## 545          Spencer Howard  TEX     29
+## 546            Amir Garrett  KCR     29
+## 547          Trey Wingenter  DET     29
+## 548              Matt Krook  NYY     29
+## 549           Roddery Muñoz  ATL     29
+## 550          George Soriano  MIA     29
+## 551           Freddy Tarnok  OAK     28
+## 552              Sean Burke  CHW     28
+## 553         Stephen Ridings  NYM     28
+## 554          Karl Kauffmann  COL     28
+## 555             Austin Voth  BAL     28
+## 556          Tony Santillan  CIN     28
+## 557            Josh Simpson  MIA     28
+## 558          Richard Bleier  BOS     28
+## 559            Andrew Wantz  LAA     28
+## 560            Angel Felipe  OAK     28
+## 561             Luis Patiño  TBR     28
+## 562            Caleb Kilian  CHC     27
+## 563           Ryan Weathers  SDP     27
+## 564              Jay Groome  SDP     27
+## 565        Bruce Zimmermann  BAL     27
+## 566           Rob Zastryzny  PIT     27
+## 567           Andrew Suárez  STL     27
+## 568           Domingo Tapia  SDP     27
+## 569              Nick Mears  COL     27
+## 570             Josh Taylor  KCR     26
+## 571             Jay Jackson  TOR     26
+## 572             Tommy Nance  MIA     26
+## 573           Dylan Coleman  KCR     26
+## 574            Jimmy Nelson  LAD     26
+## 575          Diego Castillo  SEA     26
+## 576             James Naile  STL     26
+## 577           Garrett Acton  OAK     26
+## 578           Matt Carasiti  COL     26
+## 579             Jhony Brito  NYY     25
+## 580             Angel Zerpa  KCR     25
+## 581            Tejay Antone  CIN     25
+## 582       Jonathan Loáisiga  NYY     25
+## 583         Yerry Rodríguez  TEX     25
+## 584              Cole Sands  MIN     25
+## 585           José Castillo  SDP     25
+## 586            Jimmy Herget  LAA     25
+## 587            Tayler Scott  BOS     25
+## 588          Casey Legumina  CIN     25
+## 589              Luis Cessa  COL     24
+## 590        Jordan Balazovic  MIN     24
+## 591               Derek Law  CIN     24
+## 592             Cole Waites  SFG     24
+## 593          Brandon Walter  BOS     23
+## 594            Hyun Jin Ryu  TOR     23
+## 595                Drew Rom  BAL     23
+## 596           Drew Pomeranz  SDP     23
+## 597            Wily Peralta  WSN     23
+## 598              Rowan Wick  CHC     23
+## 599         Gavin Hollowell  COL     23
+## 600             Ethan Small  MIL     23
+## 601               Wil Crowe  PIT     23
+## 602             Joe Jacques  BOS     23
+## 603        Nicholas Padilla  CHW     23
+## 604              Riley Pint  COL     23
+## 605         Eduardo Salazar  CIN     23
+## 606            Hobie Harris  WSN     23
+## 607       Antonio Senzatela  COL     22
+## 608            Ryan Feltner  COL     22
+## 609            Ryan Rolison  COL     22
+## 610           Dakota Hudson  STL     22
+## 611              Chad Green  TOR     22
+## 612         Adrián Martínez  OAK     22
+## 613           Riley O&#39;Brien  SEA     22
+## 614             Ryan Tepera  TEX     22
+## 615            Thomas Hatch  TOR     22
+## 616          Casey Lawrence  TOR     21
+## 617           Jarlín García  PIT     21
+## 618           Shelby Miller  LAD     21
+## 619           Sammy Peralta  CHW     21
+## 620            Austin Davis  HOU     21
+## 621           Ricky Karcher  CIN     21
+## 622             Caleb Smith  PIT     20
+## 623              Zack Weiss  LAA     20
+## 624           Carlos Vargas  ARI     20
+## 625        Dereck Rodríguez  ATL     20
+## 626               Juan Then  SEA     20
+## 627            Deivi García  NYY     20
+## 628            Blake Taylor  HOU     20
+## 629        Michael McGreevy  STL     19
+## 630             Nick Nelson  PHI     19
+## 631        Mauricio Llovera  SFG     19
+## 632       Anthony Misiewicz  DET     19
+## 633            Hagen Danner  TOR     19
+## 634           Andrew Politi  BOS     19
+## 635              José Lopez  TBR     19
+## 636             Gavin Stone  LAD     18
+## 637                Zak Kent  TEX     18
+## 638       Elieser Hernández  NYM     18
+## 639          J.B. Bukauskas  MIL     18
+## 640            Casey Sadler  SEA     18
+## 641           Mark Melancon  ARI     18
+## 642         Justin Martinez  ARI     18
+## 643         Kyle Funkhouser  TEX     18
+## 644         Ronny Henriquez  MIN     18
+## 645             Joel Kuhnel  HOU     18
+## 646              Codi Heuer  CHC     18
+## 647              Bryan Shaw  CHW     18
+## 648              Cade Smith  CLE     18
+## 649            Kent Emanuel  PIT     17
+## 650              Dylan Dodd  ATL     17
+## 651             Danny Duffy  TEX     17
+## 652      Peyton Battenfield  CLE     17
+## 653        Prelander Berroa  SEA     17
+## 654             Miguel Díaz  DET     17
+## 655             Colin Selby  PIT     17
+## 656           Justin Bruihl  LAD     17
+## 657           Enoli Paredes  HOU     17
+## 658             Levi Stoudt  CIN     16
+## 659        Andrew Kittredge  TBR     16
+## 660           Thyago Vieira  MIL     16
+## 661         Zach McAllister  ARI     16
+## 662           Victor Vodnik  ATL     16
+## 663            Tyler Kinley  COL     16
+## 664           Ryan Sherriff  BOS     16
+## 665               Noah Song  PHI     16
+## 666           Gerson Moreno  WSN     16
+## 667             Janson Junk  MIL     16
+## 668             Nate Fisher  CHW     16
+## 669             Cam Sanders  CHC     16
+## 670           Slade Cecconi  ARI     15
+## 671           Robert Gasser  MIL     15
+## 672          Taylor Dollard  SEA     15
+## 673            Frank German  CIN     15
+## 674           James Norwood  NYY     15
+## 675             Sam Coonrod  NYM     15
+## 676          Calvin Faucher  TBR     15
+## 677            Wander Suero  LAD     15
+## 678             Alex Colomé  CHW     15
+## 679             Reiss Knehr  SDP     15
+## 680           Colten Brewer  NYY     15
+## 681           Caleb Baragar  CLE     15
+## 682          Packy Naughton  STL     14
+## 683        Jonathan Stiever  CHW     14
+## 684              Ryan Weber  NYY     14
+## 685             Logan Allen  COL     14
+## 686            Ryan Hendrix  ARI     14
+## 687             Matt Wisler  DET     14
+## 688           Joey Krehbiel  BAL     14
+## 689           Justin Yeager  MIL     14
+## 690          Andrés Machado  WSN     14
+## 691           Collin Snider  KCR     14
+## 692             Blair Calvo  DET     14
+## 693            Erich Uelmen  PHI     14
+## 694           Connor Thomas  STL     13
+## 695              Nick Burdi  CHC     13
+## 696         Kenny Rosenberg  LAA     13
+## 697           Justin Wilson  MIL     13
+## 698         J.P. Feyereisen  LAD     13
+## 699           Daniel Zamora  PIT     13
+## 700              José Butto  NYM     12
+## 701       Konnor Pilkington  ARI     12
+## 702                Luis Gil  NYY     12
+## 703          McKinley Moore  PHI     12
+## 704            Zach Brzykcy  WSN     12
+## 705        Manuel Rodríguez  CHC     12
+## 706     Duane Underwood Jr.  PIT     12
+## 707                Ty Blach  COL     12
+## 708            Grant Holmes  ATL     12
+## 709             Melvin Adón  SFG     12
+## 710        Nick Mikolajchak  CLE     12
+## 711       Richard Rodríguez  MIA     12
+## 712         Matt Ruppenthal  HOU     12
+## 713             Matt Cronin  WSN     12
+## 714            Jorge Alcala  MIN     11
+## 715              José Ureña  WSN     11
+## 716           Sean Reynolds  MIA     11
+## 717           Randy Vásquez  NYY     10
+## 718            Allan Winans  ATL     10
+## 719            Dany Jiménez  OAK     10
+## 720           Stephen Kolek  SEA     10
+## 721             Rico Garcia  OAK     10
+## 722            Bryan Garcia  HOU     10
+## 723          Dallas Keuchel  MIN      9
+## 724            Kyle Nicolas  PIT      9
+## 725               Mick Abel  PHI      9
+## 726         Chris Rodriguez  LAA      9
+## 727         Isaiah Campbell  SEA      9
+## 728        Junior Fernández  TOR      9
+## 729              Bryan Mata  BOS      9
+## 730            Sean Newcomb  SFG      9
+## 731                Paul Fry  TOR      9
+## 732             Wyatt Mills  BOS      9
+## 733             Pedro Avila  SDP      9
+## 734          Trevor Brigden  TBR      9
+## 735          Daniel Castano  MIA      9
+## 736              Jake Walsh  STL      9
+## 737             Moises Lugo  SDP      9
+## 738            Evan Reifert  TBR      9
+## 739           Heath Hembree  DET      9
+## 740          Patrick Murphy  MIN      8
+## 741            Randy Dobnak  MIN      8
+## 742             Tommy Doyle  COL      8
+## 743           Peter Solomon  ARI      8
+## 744          Devin Smeltzer  MIA      8
+## 745              Adam Oller  OAK      8
+## 746           Brooks Wilson  ATL      7
+## 747          Aaron McGarity  NYY      7
+## 748              José Marte  LAA      7
+## 749           Corbin Martin  ARI      7
+## 750              Ben Bowden  PHI      7
+## 751          Aneurys Zabala  DET      7
+## 752            Kodi Whitley  STL      7
+## 753           Phillip Diehl  CLE      7
+## 754            Tanner Tully  NYY      6
+## 755             Cole Hamels  SDP      6
+## 756          Yosver Zulueta  TOR      6
+## 757           Griff McGarry  PHI      6
+## 758            Tommy Milone  SEA      6
+## 759           Evan McKendry  TBR      6
+## 760        Reiver Sanmartin  CIN      6
+## 761         Kody Funderburk  MIN      6
+## 762              Alek Jacob  SDP      6
+## 763            Brett Martin  TEX      6
+## 764          James McArthur  KCR      6
+## 765        Andrew Misiaszek  CLE      6
+## 766             Ryan Loutos  STL      6
+## 767           Zach Thompson  TOR      6
+## 768             Rony García  DET      6
+## 769          José Rodríguez  SEA      6
+## 770             Bailey Horn  CHC      6
+## 771           Nick Allgeyer  HOU      6
+## 772           Reyes Moronta  LAA      6
+## 773       Jonathan Sprinkle  HOU      6
+## 774           Tyler Gilbert  ARI      5
+## 775            Chris Clarke  CHC      5
+## 776            César Valdez  LAA      5
+## 777         Jason Alexander  MIL      5
+## 778       Jackson Tetreault  WSN      5
+## 779            Reed Garrett  BAL      5
+## 780        Chi Chi González  MIA      5
+## 781           Deolis Guerra  OAK      5
+## 782       Francisco Morales  PHI      5
+## 783            Nick Neidert  CHC      5
+## 784  Fineas Del Bonta-Smith  COL      5
+## 785             Justin Dunn  CIN      5
+## 786           Edgar Navarro  CHW      5
+## 787            Lucas Luetge  ATL      4
+## 788           Dan Altavilla  BOS      4
+## 789          T.J. McFarland  NYM      4
+## 790             Mike Mayers  KCR      4
+## 791           Brett Kennedy  CIN      4
+## 792            Adam Kolarek  LAD      4
+## 793              Mike Vasil  NYM      3
+## 794            Darius Vines  ATL      3
+## 795            Kevin Herget  CIN      3
+## 796          Brenan Hanifee  DET      3
+## 797             Marc Church  TEX      3
+## 798             Colby White  TBR      3
+## 799             Damon Jones  PHI      3
+## 800          Nabil Crismatt  SDP      3
+## 801           Anthony Banda  WSN      3
+## 802            Alex Claudio  MIL      3
+## 803          Eli Villalobos  PIT      3
+## 804         Spenser Watkins  BAL      3
+## 805             Eric Torres  LAA      3
+## 806         Touki Toussaint  CHW      3
+## 807           Aaron Sanchez  MIN      3
+## 808             Lane Ramsey  CHW      3
+## 809           Jeff Lindgren  MIA      3
+## 810             Michel Baez  SDP      3
+## 811           Chase De Jong  PIT      3
+## 812           Stephen Jones  COL      2
+## 813           Fernando Abad  COL      1
+## 814           R.J. Dabovich  SFG      0
+## 815           Sam Delaplane  SFG      0</code></pre>
 
 
 
