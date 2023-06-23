@@ -21,7 +21,12 @@ hitter_dat <- read_html("https://www.fangraphs.com/projections?pos=all&stats=bat
 
 hitter_data <- hitter_dat$props$pageProps$dehydratedState$queries$state$data[[1]]
 
-positions <- read_html('https://www.tgfantasybaseball.com/baseball/pos_elig.cfm')
+positions_1 <- 
+  read_html('https://www.espn.com/fantasy/baseball/story/_/id/35438162/fantasy-baseball-rankings-head-head-rotisserie-leagues-2023-espn-karabell') %>%
+  html_table()
+
+positions_2 <- read_html('https://www.espn.com/fantasy/baseball/story/_/id/35437997/fantasy-baseball-rankings-points-leagues-2023-espn-cockcroft') %>%
+  html_table()
 
 pitcher_dat <- read_html("https://www.fangraphs.com/projections?pos=&stats=pit&type=rfangraphsdc&statgroup=fantasy") %>% html_elements('#__NEXT_DATA__') %>% html_text() %>% jsonlite::fromJSON()
 
@@ -31,31 +36,48 @@ pitcher_data <- pitcher_dat$props$pageProps$dehydratedState$queries$state$data[[
 ```{r clean-data}
 clean_hitter_data <- hitter_data %>%
   select(
-    PlayerName, Team, H, `2B`, `3B`, HR, R, RBI, BB, SO, SB
+    PlayerName, Team, H, `1B`, `2B`, `3B`, HR, R, RBI, BB, SO, SB, minpos
     ) %>%
-  mutate(PlayerName = janitor::make_clean_names(PlayerName, case = 'none')) %>%
-  mutate(PlayerName = str_replace_all(str_remove(PlayerName, '_Jr'), '_', ' '))
+  mutate(PlayerName = janitor::make_clean_names(PlayerName, case = 'none'))
 
 clean_pitcher_data <- pitcher_data %>%
   select(
     PlayerName, Team, IP, H, ER, BB, SO, W, L, SV, HLD
   )
 
-clean_positions <- positions %>% 
-  html_table(header = T) %>% 
+  
+positions_1 %>% 
+  html_table(header = T) %>%
   .[[1]] %>%
-  filter(Player != 'Player') %>%
-  separate(Player, sep = ', ', c('last_name', 'first_name')) %>%
+  select(Player, Team, `Elig. Pos.`) %>%
   mutate(
-    Name = janitor::make_clean_names(paste(first_name, last_name), case = 'none'),
-    Name = str_replace_all(str_remove(Name, '_Jr'), '_', ' '))
-  # pivot_longer(cols = -c('Player'), names_to = 'Pos', values_to = 'True') %>%
-  # filter(True == 'X') %>%
-  # select(Name, Pos)
+    Player = janitor::make_clean_names(Player, case = 'none'),
+    Team = str_replace_all(Team, 'SD', 'SDP'),
+    Team = str_replace_all(Team, 'TB', 'TBR'),
+    Team = str_replace_all(Team, 'CWS', 'CHW'),
+    Team = str_replace_all(Team, 'KC', 'KCR'),
+    Team = str_replace_all(Team, 'SF', 'SFG'),
+    Team = str_replace_all(Team, 'WSH', 'WSN'))
+
+postions_2 %>%
+  html_table(header = T) %>%
+  .[[1]] %>%
+  select(Player, Team, `Elig. Pos.`) %>%
+  mutate(
+    Player = janitor::make_clean_names(Player, case = 'none'),
+    Team = str_replace_all(Team, 'SD', 'SDP'),
+    Team = str_replace_all(Team, 'TB', 'TBR'),
+    Team = str_replace_all(Team, 'CWS', 'CHW'),
+    Team = str_replace_all(Team, 'KC', 'KCR'),
+    Team = str_replace_all(Team, 'SF', 'SFG'),
+    Team = str_replace_all(Team, 'WSH', 'WSN'))
+
 ```
 
 ```{r add-eligible-positions}
-clean_hitter_data %>% left_join(clean_positions, by = c('PlayerName'='Name'))
+clean_hitter_data %>% 
+  left_join(clean_positions, by = c('PlayerName'='Player', 'Team'='Team')) %>%
+  filter(is.na(`Elig. Pos.`))
 ```
 
 
@@ -70,7 +92,6 @@ compute_pitcher_points <- function(IP, H, ER, BB, K, W, L, SV, HD) {
 
 clean_hitter_data %>% 
   mutate(
-    `1B` = H - `2B` -`3B` - HR,
     TB = `1B` + 2*`2B` + 3*`3B` + 4*HR,
     Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %>%
   select(PlayerName, Team, Points) %>%
