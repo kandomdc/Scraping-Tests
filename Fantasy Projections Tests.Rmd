@@ -89,16 +89,22 @@ compute_pitcher_points <- function(IP, H, ER, BB, K, W, L, SV, HD) {
   3*IP - H - 2*ER - BB + K + 2*W - 2*L + 5*SV + 2*HD
 }
 
-final_hitter_data %>% 
-  mutate(
-    TB = `1B` + 2*`2B` + 3*`3B` + 4*HR,
-    Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %>%
-  filter(str_detect(`Elig. Pos.`, '3')) %>%
-  select(PlayerName, Team, `Elig. Pos.`,Points) %>%
-  arrange(desc(Points))
+write.csv(
+  final_hitter_data %>% 
+    mutate(
+      TB = `1B` + 2*`2B` + 3*`3B` + 4*HR,
+      Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %>%
+    filter(str_detect(`Elig. Pos.`, '3')) %>%
+    select(PlayerName, Team, `Elig. Pos.`,Points) %>%
+    arrange(desc(Points)),
+  "C:\\Users\\kdeso\\OneDrive\\Documents\\GitHub\\Scraping-Tests\\Hitters.csv"
+)
 
-clean_pitcher_data %>%
-  mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %>%
-  select(PlayerName, Team, Points) %>%
-  arrange(desc(Points))
+write.csv(
+  clean_pitcher_data %>%
+    mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %>%
+    select(PlayerName, Team, Points) %>%
+    arrange(desc(Points)),
+  "C:\\Users\\kdeso\\OneDrive\\Documents\\GitHub\\Scraping-Tests\\Pitchers.csv"
+  )
 ```
