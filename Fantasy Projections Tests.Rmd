@@ -14,6 +14,7 @@ library(dplyr)
 library(rvest)
 library(stringr)
 library(tidyr)
+library(ggplot2)
 ```
 
 ```{r load-data}
@@ -51,7 +52,7 @@ clean_hitter_data <- hitter_data %>%
 
 clean_pitcher_data <- pitcher_data %>%
   select(
-    PlayerName, Team, IP, H, ER, BB, SO, W, L, SV, HLD
+    PlayerName, Team, IP, H, ER, BB, SO, W, L, SV, HLD, G, GS
   )
 
 clean_positions_1 <- positions_1 %>% 
@@ -101,18 +102,30 @@ compute_pitcher_points <- function(IP, H, ER, BB, K, W, L, SV, HD) {
 displayed_hitter_data <- final_hitter_data %>% 
   mutate(
     TB = `1B` + 2*`2B` + 3*`3B` + 4*HR,
-    Points = compute_batter_points(R, TB, RBI, BB, SO, SB)) %>%
+    Points = compute_batter_points(R, TB, RBI, BB, SO, SB)
+    ) %>%
   select(-c(`1B`, TB)) %>%
   relocate(`Elig. Pos.`, .after = PlayerName) %>%
   arrange(desc(Points))
-  
 
 displayed_pitcher_data <- clean_pitcher_data %>%
-  mutate(Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD)) %>%
+  mutate(
+    Points = compute_pitcher_points(IP, H, ER, BB, SO, W, L, SV, HLD),
+    relief = GS/G,
+    Pos = ifelse(relief > 0.2, 'SP', 'RP'),
+    `Points/IP` = round(Points/IP, 2)) %>%
+  select(-c(G, GS, relief)) %>%
+  relocate(Pos, .after = PlayerName) %>%
   arrange(desc(Points))
 
 View(displayed_hitter_data)
 View(displayed_pitcher_data)
+```
+
+```{r visualize-data}
+ggplot(displayed_pitcher_data, aes(x = IP, y = Points/IP)) +
+  geom_text(aes(label = PlayerName), size = 2) +
+  facet_grid(~Pos)
 ```
 
 ```{r save-data}
